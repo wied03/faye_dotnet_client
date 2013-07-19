@@ -3,16 +3,16 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
-using WebSocket4Net;
 
 #endregion
 
 namespace Bsw.WebSocket4NetSslExt.Socket
 {
-    public class WebSocketCustomSslTrust : WebSocket
+    public class ConnectionException : Exception
     {
-        public WebSocketCustomSslTrust(string uri) : base(uri)
+        public ConnectionException(string message) : base(message)
         {
+            
         }
     }
 }
