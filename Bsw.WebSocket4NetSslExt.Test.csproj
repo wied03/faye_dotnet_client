@@ -58,6 +58,7 @@
     <None Include="config.ru" />
     <None Include="Gemfile" />
     <None Include="packages.config" />
+    <None Include="runthinserver.bat" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">
