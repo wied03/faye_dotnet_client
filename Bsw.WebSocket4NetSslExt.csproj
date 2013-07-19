@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Socket\WebSocketCustomSslTrust.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
