@@ -44,11 +44,19 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="WebSocket4Net">
+      <HintPath>..\..\..\nuget_pkg_lnk\WebSocket4Net.0.8\lib\net40\WebSocket4Net.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Socket\WebSocketCustomSslTrustTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.rb" />
+    <None Include="config.ru" />
+    <None Include="Gemfile" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
