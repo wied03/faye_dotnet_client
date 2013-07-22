@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
 using NUnit.Framework;
@@ -24,6 +25,8 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         private static readonly string BundlePath = Path.Combine(Path.GetDirectoryName(RubyPath),
                                                                  "bundle");
 
+        private TaskCompletionSource<string> _messageReceivedTask;
+
         [TestFixtureSetUp]
         public static void FixtureSetup()
         {
@@ -37,6 +40,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             _socket = new WebSocketCustomSslTrust(uri: URI,
                                                   trustedCertChain: null);
             _thinProcess = null;
+            _messageReceivedTask = new TaskCompletionSource<string>();
         }
 
         [TearDown]
@@ -125,22 +129,42 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             // TODO: Generate certs we don't trust and put them here
             StartRubyWebsocketServer("--ssl --ssl-key-file ssl/rackthin.key --ssl-cert-file ssl/rackthin.crt");
 
-            // act
-
-            // assert
-            Assert.Fail("write test");
+            // act + assert
+            _socket.Invoking(s => s.Open())
+                   .ShouldThrow<SSLException>()
+                   .WithMessage("The certificate XXX is not part of the trusted list of certificates");
         }
 
         [Test]
         public void Ssl_trusted_by_us()
         {
             // arrange
-            StartRubyWebsocketServer("--ssl --ssl-key-file ssl/rackthin.key --ssl-cert-file ssl/rackthin.crt");
+            StartRubyWebsocketServer();
+            //StartRubyWebsocketServer("--ssl --ssl-key-file ssl/rackthin.key --ssl-cert-file ssl/rackthin.crt");
+            _socket.MessageReceived += SocketMessageReceived;
 
             // act
+            _socket.Open();
 
             // assert
-            Assert.Fail("write test");
+            _socket.Send("hi there");
+            var withinTimeout = _messageReceivedTask.Task.Wait(2.Seconds());
+            if (!withinTimeout)
+            {
+                Assert.Fail("Timed out waiting for response from web socket!");
+            }
+            _messageReceivedTask
+                .Task
+                .Result
+                .Should()
+                .Be("hi there");
+            Assert.Fail("once this test passes without SSL, then re-enable the 2nd to top arrange method call above and then this test is complete");
+        }
+
+        void SocketMessageReceived(object sender, WebSocket4Net.MessageReceivedEventArgs e)
+        {
+            var messageReceived = e.Message;
+            _messageReceivedTask.SetResult(messageReceived);
         }
 
         [Test]
