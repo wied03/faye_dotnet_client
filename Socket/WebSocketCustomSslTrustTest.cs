@@ -18,6 +18,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
     public class WebSocketCustomSslTrustTest : BaseTest
     {
         private const string URI = "wss://localhost:8132";
+        private const string TEST_MESSAGE = "hi there";
         private IWebSocket _socket;
         private Process _thinProcess;
         // Use Ruby.exe path to avoid batch files which cause problems with Process.Kill()
@@ -96,6 +97,18 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             _thinProcess = Process.Start(procStart);
         }
 
+        static void SocketOpened(object sender, EventArgs e)
+        {
+            var socket = (IWebSocket)sender;
+            socket.Send(TEST_MESSAGE);
+        }
+
+        void SocketMessageReceived(object sender, WebSocket4Net.MessageReceivedEventArgs e)
+        {
+            var messageReceived = e.Message;
+            _messageReceivedTask.SetResult(messageReceived);
+        }
+
         [Test]
         public void Cant_connect()
         {
@@ -122,12 +135,16 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                    .WithMessage("Was able to connect to URI '{0}' but no SSL");
         }
 
+        // openssl genrsa -out not_trusted.ca.key 4096
+        // openssl req -new -x509 -days 3650 -key not_trusted.ca.key -out not_trusted.ca.crt
+        // openssl genrsa -out not_trusted.key 4096
+        // openssl req -new -key not_trusted.key -out not_trusted.csr
+        // openssl x509 -req -days 3650 -in not_trusted.csr -CA not_trusted.ca.crt -CAkey not_trusted.ca.key -set_serial 01 -out not_trusted.crt
         [Test]
         public void Ssl_but_not_trusted_by_us()
         {
             // arrange
-            // TODO: Generate certs we don't trust and put them here
-            StartRubyWebsocketServer("--ssl --ssl-key-file ssl/rackthin.key --ssl-cert-file ssl/rackthin.crt");
+            StartRubyWebsocketServer("--ssl --ssl-key-file Sockets/test_certs/not_trusted.key --ssl-cert-file Sockets/test_certs/not_trusted.crt");
 
             // act + assert
             _socket.Invoking(s => s.Open())
@@ -136,14 +153,26 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         }
 
         [Test]
+        public void Wrong_hostname()
+        {
+            // arrange
+
+            // act
+
+            // assert
+            Assert.Fail("write test");
+        }
+
+        [Test]
         public void Ssl_trusted_by_us()
         {
             // arrange
+            // TODO: Generate certs that we trust here
             StartRubyWebsocketServer("--ssl --ssl-key-file ssl/rackthin.key --ssl-cert-file ssl/rackthin.crt");
             _socket.MessageReceived += SocketMessageReceived;
 
             // act
-            _socket.Opened += _socket_Opened;
+            _socket.Opened += SocketOpened;
             _socket.Open();
 
             // assert
@@ -157,18 +186,6 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                 .Result
                 .Should()
                 .Be("Received your message hi there");
-        }
-
-        void _socket_Opened(object sender, EventArgs e)
-        {
-            var socket = (IWebSocket) sender;
-            socket.Send("hi there");
-        }
-
-        void SocketMessageReceived(object sender, WebSocket4Net.MessageReceivedEventArgs e)
-        {
-            var messageReceived = e.Message;
-            _messageReceivedTask.SetResult(messageReceived);
         }
 
         [Test]
