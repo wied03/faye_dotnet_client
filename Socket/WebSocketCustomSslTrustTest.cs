@@ -139,15 +139,14 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Ssl_trusted_by_us()
         {
             // arrange
-            StartRubyWebsocketServer();
-            //StartRubyWebsocketServer("--ssl --ssl-key-file ssl/rackthin.key --ssl-cert-file ssl/rackthin.crt");
+            StartRubyWebsocketServer("--ssl --ssl-key-file ssl/rackthin.key --ssl-cert-file ssl/rackthin.crt");
             _socket.MessageReceived += SocketMessageReceived;
 
             // act
+            _socket.Opened += _socket_Opened;
             _socket.Open();
 
             // assert
-            _socket.Send("hi there");
             var withinTimeout = _messageReceivedTask.Task.Wait(2.Seconds());
             if (!withinTimeout)
             {
@@ -157,8 +156,13 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                 .Task
                 .Result
                 .Should()
-                .Be("hi there");
-            Assert.Fail("once this test passes without SSL, then re-enable the 2nd to top arrange method call above and then this test is complete");
+                .Be("Received your message hi there");
+        }
+
+        void _socket_Opened(object sender, EventArgs e)
+        {
+            var socket = (IWebSocket) sender;
+            socket.Send("hi there");
         }
 
         void SocketMessageReceived(object sender, WebSocket4Net.MessageReceivedEventArgs e)
