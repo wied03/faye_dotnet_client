@@ -8,6 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
@@ -119,7 +120,8 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             var basePath = Path.GetFullPath(@"..\..\Socket\test_certs");
             var fullPath = Path.Combine(basePath,
                                         testCertFile);
-            var cert = new X509Certificate(fullPath);
+            //var cert = new X509Certificate(fullPath);
+            var cert = X509Certificate.CreateFromSignedFile(fullPath);
             _trustedCerts.Add(cert);
         }
 
@@ -163,13 +165,13 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Ssl_but_not_trusted_by_us()
         {
             // arrange
+            StartRubyWebsocketServer("--ssl --ssl-key-file Socket/test_certs/not_trusted.key --ssl-cert-file Socket/test_certs/not_trusted.crt");
             AddTrustedCert("trusted.ca.crt");
-            StartRubyWebsocketServer("--ssl --ssl-key-file Sockets/test_certs/not_trusted.key --ssl-cert-file Sockets/test_certs/not_trusted.crt");
 
             // act + assert
             _socket.Invoking(s => s.Open())
                    .ShouldThrow<SSLException>()
-                   .WithMessage("The certificate XXX is not part of the trusted list of certificates");
+                   .WithMessage("The server certificate was not on the trusted list!");
         }
 
         [Test]
@@ -177,12 +179,12 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         {
             // arrange
             AddTrustedCert("trusted.ca.crt");
-            StartRubyWebsocketServer("--ssl --ssl-key-file Sockets/test_certs/trusted.key --ssl-cert-file Sockets/test_certs/trusted_wronghost.crt");
+            StartRubyWebsocketServer("--ssl --ssl-key-file Socket/test_certs/trusted.key --ssl-cert-file Socket/test_certs/trusted_wronghost.crt");
 
             // act + assert
             _socket.Invoking(s => s.Open())
                    .ShouldThrow<SSLException>()
-                   .WithMessage("The certificate XXX is not part of the trusted list of certificates");
+                   .WithMessage("The server certificate was not on the trusted list (RemoteCertificateNameMismatch)!");
         }
 
         [Test]
@@ -190,7 +192,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         {
             // arrange
             AddTrustedCert("trusted.ca.crt");
-            StartRubyWebsocketServer("--ssl --ssl-key-file Sockets/test_certs/trusted.key --ssl-cert-file Sockets/test_certs/trusted.crt");
+            StartRubyWebsocketServer("--ssl --ssl-key-file Socket/test_certs/trusted.key --ssl-cert-file Socket/test_certs/trusted.crt");
             _socket.MessageReceived += SocketMessageReceived;
 
             // act
@@ -215,7 +217,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         {
             // arrange
             AddTrustedCert("trusted.ca.crt");
-            StartRubyWebsocketServer("--ssl --ssl-key-file Sockets/test_certs/trusted.key --ssl-cert-file Sockets/test_certs/trusted_expired.crt");
+            StartRubyWebsocketServer("--ssl --ssl-key-file Socket/test_certs/trusted.key --ssl-cert-file Socket/test_certs/trusted_expired.crt");
 
             // act + assert
             _socket.Invoking(s => s.Open())
