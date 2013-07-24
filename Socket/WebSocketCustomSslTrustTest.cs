@@ -8,7 +8,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
@@ -55,7 +54,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         {
             if (_thinProcess != null)
             {
-                _thinProcess.Kill();
+                ProcessUtilities.KillProcessTree(_thinProcess);
             }
             base.Teardown();
         }
@@ -171,7 +170,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             // act + assert
             _socket.Invoking(s => s.Open())
                    .ShouldThrow<SSLException>()
-                   .WithMessage("The server certificate was not on the trusted list!");
+                   .WithMessage("The server certificate is not trusted (RemoteCertificateChainErrors)!");
         }
 
         [Test]
@@ -184,7 +183,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             // act + assert
             _socket.Invoking(s => s.Open())
                    .ShouldThrow<SSLException>()
-                   .WithMessage("The server certificate was not on the trusted list (RemoteCertificateNameMismatch)!");
+                   .WithMessage("The server certificate is not trusted (RemoteCertificateNameMismatch)!");
         }
 
         [Test]
