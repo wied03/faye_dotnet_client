@@ -12,6 +12,12 @@ namespace Bsw.WebSocket4NetSslExt.Socket
     {
         public ConnectionException(string message) : base(message)
         {
+        }
+
+        public ConnectionException(string message,
+                                   Exception e) : base(message,
+                                                       e)
+        {
             
         }
     }

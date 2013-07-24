@@ -2,8 +2,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using WebSocket4Net;
 
@@ -15,6 +18,7 @@ namespace Bsw.WebSocket4NetSslExt.Socket
                                            IWebSocket
     {
         private readonly IEnumerable<X509Certificate> _trustedCertChain;
+        private readonly string _uri;
 
         /// <summary>
         ///     Constructs a websocket that verifies the server's certificate is signed by someone we explicitly trust
@@ -29,12 +33,74 @@ namespace Bsw.WebSocket4NetSslExt.Socket
         public WebSocketCustomSslTrust(string uri,
                                        IEnumerable<X509Certificate> trustedCertChain) : base(uri)
         {
+            _uri = uri;
             _trustedCertChain = trustedCertChain;
         }
 
         public new void Open()
         {
+            TriggerSslValidation();
             base.Open();
+        }
+
+        private void TriggerSslValidation()
+        {
+            var uri = new Uri(_uri);
+            var tcpClient = new TcpClient();
+            try
+            {
+                tcpClient.Connect(hostname: uri.Host,
+                                  port: uri.Port);
+                var sslStream = new SslStream(innerStream: tcpClient.GetStream(),
+                                              leaveInnerStreamOpen: false,
+                                              userCertificateValidationCallback: VerifyServersCert);
+                try
+                {
+                    sslStream.AuthenticateAsClient(uri.Host);
+                }
+                catch (IOException ioException)
+                {
+                    if (ioException.HResult == -2146232800)
+                    {
+                        var error =
+                            string.Format(
+                                          "Was able to connect to host '{0}' on port {1} but SSL handshake failed.  Are you sure SSL is running?",
+                                          uri.Host,
+                                          uri.Port);
+                        throw new ConnectionException(error,
+                                                      ioException);
+                    }
+                    throw;
+                }
+                finally
+                {
+                    sslStream.Close();
+                }
+            }
+            catch (SocketException e)
+            {
+                throw new ConnectionException("Unable to connect",
+                                              e);
+            }
+            finally
+            {
+                tcpClient.Close();
+            }
+        }
+
+        private bool VerifyServersCert(object sender,
+                                       X509Certificate certificate,
+                                       X509Chain chain,
+                                       SslPolicyErrors sslPolicyErrors)
+        {
+            var actualCertChain = chain
+                .ChainElements
+                .Cast<X509ChainElement>()
+                .Select(element => element.Certificate);
+
+            return actualCertChain
+                .Intersect(_trustedCertChain)
+                .Any();
         }
     }
 }
