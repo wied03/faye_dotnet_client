@@ -95,8 +95,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             var args = BundlePath + " exec thin start -R config.ru -p 8132 -V ";
             if (keyFile != null)
             {
-                args += string.Format(
-                                      "--ssl --ssl-key-file {0} --ssl-cert-file {1}",
+                args += string.Format("--ssl --ssl-key-file {0} --ssl-cert-file {1}",
                                       FullCertPath(keyFile),
                                       FullCertPath(certFile));
             }
