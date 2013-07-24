@@ -8,6 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
@@ -100,6 +101,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                 WindowStyle = ProcessWindowStyle.Hidden
                             };
             _thinProcess = Process.Start(procStart);
+            Thread.Sleep(200.Milliseconds());
         }
 
         static void SocketOpened(object sender, EventArgs e)
