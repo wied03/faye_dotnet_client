@@ -83,10 +83,17 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             Process.Start(procStart).WaitForExit();
         }
 
-        private void StartRubyWebsocketServer(string extraThinOptions = "")
+        private void StartRubyWebsocketServer(string keyFile = null,string certFile=null)
         {
-            const string defaultThinArgs = " exec thin start -R config.ru -p 8132 -V ";
-            var args = BundlePath + defaultThinArgs + extraThinOptions;
+            var args = BundlePath + " exec thin start -R config.ru -p 8132 -V ";
+            if (keyFile != null)
+            {
+                args += string.Format(
+                                      "--ssl --ssl-key-file Socket/test_certs/{0} --ssl-cert-file Socket/test_certs/{1}",
+                                      keyFile,
+                                      certFile);
+            }
+            
             // don't want to run this inside of bin
             var pathWhereConfigIs = Path.GetFullPath(@"..\..");
             var procStart = new ProcessStartInfo
@@ -116,7 +123,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             _messageReceivedTask.SetResult(messageReceived);
         }
 
-        private void AddTrustedCert(string testCertFile)
+        private void SetupOurTrustedCertToBe(string testCertFile)
         {
             var basePath = Path.GetFullPath(@"..\..\Socket\test_certs");
             var fullPath = Path.Combine(basePath,
@@ -166,8 +173,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Ssl_but_not_trusted_by_us()
         {
             // arrange
-            StartRubyWebsocketServer("--ssl --ssl-key-file Socket/test_certs/not_trusted.key --ssl-cert-file Socket/test_certs/not_trusted.crt");
-            AddTrustedCert("trusted.ca.crt");
+            StartRubyWebsocketServer(keyFile: "not_trusted.key",
+                                     certFile: "not_trusted.crt");
+            SetupOurTrustedCertToBe("trusted.ca.crt");
 
             // act + assert
             _socket.Invoking(s => s.Open())
@@ -179,8 +187,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Wrong_hostname()
         {
             // arrange
-            AddTrustedCert("trusted.ca.crt");
-            StartRubyWebsocketServer("--ssl --ssl-key-file Socket/test_certs/trusted.key --ssl-cert-file Socket/test_certs/trusted_wronghost.crt");
+            SetupOurTrustedCertToBe("trusted.ca.crt");
+            StartRubyWebsocketServer(keyFile: "trusted.key",
+                                     certFile: "trusted_wronghost.crt");
 
             // act + assert
             _socket.Invoking(s => s.Open())
@@ -192,8 +201,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Ssl_trusted_by_us()
         {
             // arrange
-            AddTrustedCert("trusted.ca.crt");
-            StartRubyWebsocketServer("--ssl --ssl-key-file Socket/test_certs/trusted.key --ssl-cert-file Socket/test_certs/trusted.crt");
+            SetupOurTrustedCertToBe("trusted.ca.crt");
+            StartRubyWebsocketServer(keyFile: "trusted.key",
+                                     certFile: "trusted.crt");
             _socket.MessageReceived += SocketMessageReceived;
 
             // act
@@ -217,8 +227,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Ssl_expired_certificate()
         {
             // arrange
-            AddTrustedCert("trusted.ca.crt");
-            StartRubyWebsocketServer("--ssl --ssl-key-file Socket/test_certs/trusted.key --ssl-cert-file Socket/test_certs/trusted_expired.crt");
+            SetupOurTrustedCertToBe("trusted.ca.crt");
+            StartRubyWebsocketServer(keyFile: "trusted.key",
+                                     certFile: "trusted_expired.crt");
 
             // act + assert
             _socket.Invoking(s => s.Open())
