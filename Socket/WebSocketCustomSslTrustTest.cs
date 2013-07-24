@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
@@ -131,8 +132,10 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             // act + assert
             _socket.Invoking(s => s.Open())
                    .ShouldThrow<ConnectionException>()
-                   .WithMessage("Cannot connect to URI '{0}' because of XXXXX",
+                   .WithMessage("Unable to connect",
                                 URI)
+                   .WithInnerException<SocketException>()
+                   .WithInnerMessage("No connection could be made because the target machine actively refused it 127.0.0.1:8132")
                 ;
         }
 
@@ -145,7 +148,10 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             // act + assert
             _socket.Invoking(s => s.Open())
                    .ShouldThrow<ConnectionException>()
-                   .WithMessage("Was able to connect to URI '{0}' but no SSL");
+                   .WithMessage("Was able to connect to host 'localhost' on port 8132 but SSL handshake failed.  Are you sure SSL is running?")
+                   .WithInnerException<IOException>()
+                   .WithInnerMessage("The handshake failed due to an unexpected packet format.")
+                   ;
         }
 
         // openssl genrsa -out not_trusted.ca.key 4096
