@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
 using NUnit.Framework;
+using WebSocket4Net;
 
 #endregion
 
@@ -28,6 +29,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         private Process _thinProcess;
         // Use Ruby.exe path to avoid batch files which cause problems with Process.Kill()
         private static readonly string RubyPath = GetRubyPath();
+
         private static readonly string BundlePath = Path.Combine(Path.GetDirectoryName(RubyPath),
                                                                  "bundle");
 
@@ -78,7 +80,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                 FileName = RubyPath,
                                 CreateNoWindow = true,
                                 WindowStyle = ProcessWindowStyle.Hidden,
-                                Arguments = BundlePath+" install",
+                                Arguments = BundlePath + " install",
                                 UseShellExecute = false
                             };
             Process.Start(procStart).WaitForExit();
@@ -90,7 +92,8 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                 certFile);
         }
 
-        private void StartRubyWebsocketServer(string keyFile = null,string certFile=null)
+        private void StartRubyWebsocketServer(string keyFile = null,
+                                              string certFile = null)
         {
             var args = BundlePath + " exec thin start -R config.ru -p 8132 -V ";
             if (keyFile != null)
@@ -99,7 +102,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                       FullCertPath(keyFile),
                                       FullCertPath(certFile));
             }
-            
+
             // don't want to run this inside of bin
             var pathWhereConfigIs = Path.GetFullPath(@"..\..");
             var procStart = new ProcessStartInfo
@@ -117,13 +120,15 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             Thread.Sleep(200.Milliseconds());
         }
 
-        static void SocketOpened(object sender, EventArgs e)
+        private static void SocketOpened(object sender,
+                                         EventArgs e)
         {
-            var socket = (IWebSocket)sender;
+            var socket = (IWebSocket) sender;
             socket.Send(TEST_MESSAGE);
         }
 
-        void SocketMessageReceived(object sender, WebSocket4Net.MessageReceivedEventArgs e)
+        private void SocketMessageReceived(object sender,
+                                           MessageReceivedEventArgs e)
         {
             var messageReceived = e.Message;
             _messageReceivedTask.SetResult(messageReceived);
@@ -148,7 +153,8 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                    .WithMessage("Unable to connect",
                                 URI)
                    .WithInnerException<SocketException>()
-                   .WithInnerMessage("No connection could be made because the target machine actively refused it 127.0.0.1:8132")
+                   .WithInnerMessage(
+                                     "No connection could be made because the target machine actively refused it 127.0.0.1:8132")
                 ;
         }
 
@@ -161,10 +167,11 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             // act + assert
             _socket.Invoking(s => s.Open())
                    .ShouldThrow<ConnectionException>()
-                   .WithMessage("Was able to connect to host 'localhost' on port 8132 but SSL handshake failed.  Are you sure SSL is running?")
+                   .WithMessage(
+                                "Was able to connect to host 'localhost' on port 8132 but SSL handshake failed.  Are you sure SSL is running?")
                    .WithInnerException<IOException>()
                    .WithInnerMessage("The handshake failed due to an unexpected packet format.")
-                   ;
+                ;
         }
 
         // openssl genrsa -out not_trusted.ca.key 4096
