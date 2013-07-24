@@ -13,7 +13,7 @@ namespace Bsw.WebSocket4NetSslExt.Socket
     {
         public SSLException(SslPolicyErrors policyErrors,
                             Exception error)
-            : base(string.Format("The server certificate was not on the trusted list{0}!",
+            : base(string.Format("The server certificate is not trusted{0}!",
                                  policyErrors == SslPolicyErrors.None
                                      ? string.Empty
                                      : " ("+policyErrors+")"),
