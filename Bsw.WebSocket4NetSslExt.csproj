@@ -47,6 +47,7 @@
     <Compile Include="Socket\ConnectionException.cs" />
     <Compile Include="Socket\IWebSocket.cs" />
     <Compile Include="Socket\SSLException.cs" />
+    <Compile Include="Socket\WebSocketClient.cs" />
     <Compile Include="Socket\WebSocketCustomSslTrust.cs" />
   </ItemGroup>
   <ItemGroup>
