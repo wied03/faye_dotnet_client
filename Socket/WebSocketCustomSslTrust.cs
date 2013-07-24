@@ -29,7 +29,7 @@ namespace Bsw.WebSocket4NetSslExt.Socket
         /// <param name="uri">URI to connect to</param>
         /// <param name="trustedCertChain">
         ///     List of certificates that should be trusted.  If any certificate in the server's chain
-        ///     matches these certs, the verification will pass.  Otherwise a ConnectionException is thrown
+        ///     matches these certs, the verification will pass.  Otherwise an SSLException is thrown
         ///     when Open() is called.
         /// </param>
         public WebSocketCustomSslTrust(string uri,
@@ -59,6 +59,8 @@ namespace Bsw.WebSocket4NetSslExt.Socket
                 try
                 {
                     sslStream.AuthenticateAsClient(uri.Host);
+                    // if we make it past this point, then we can trust the other side.  We close
+                    // the connection below and let the real WebSocket class do the work
                 }
                 catch (AuthenticationException authenticationException)
                 {
