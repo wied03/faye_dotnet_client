@@ -23,6 +23,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
     {
         private const string URI = "wss://localhost:8132";
         private const string TEST_MESSAGE = "hi there";
+        private static readonly string BasePath = Path.GetFullPath(@"..\..\Socket\test_certs");
         private IWebSocket _socket;
         private Process _thinProcess;
         // Use Ruby.exe path to avoid batch files which cause problems with Process.Kill()
@@ -83,15 +84,21 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             Process.Start(procStart).WaitForExit();
         }
 
+        private string FullCertPath(string certFile)
+        {
+            return Path.Combine(BasePath,
+                                certFile);
+        }
+
         private void StartRubyWebsocketServer(string keyFile = null,string certFile=null)
         {
             var args = BundlePath + " exec thin start -R config.ru -p 8132 -V ";
             if (keyFile != null)
             {
                 args += string.Format(
-                                      "--ssl --ssl-key-file Socket/test_certs/{0} --ssl-cert-file Socket/test_certs/{1}",
-                                      keyFile,
-                                      certFile);
+                                      "--ssl --ssl-key-file {0} --ssl-cert-file {1}",
+                                      FullCertPath(keyFile),
+                                      FullCertPath(certFile));
             }
             
             // don't want to run this inside of bin
@@ -125,10 +132,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
 
         private void SetupOurTrustedCertToBe(string testCertFile)
         {
-            var basePath = Path.GetFullPath(@"..\..\Socket\test_certs");
-            var fullPath = Path.Combine(basePath,
-                                        testCertFile);
-            //var cert = new X509Certificate(fullPath);
+            var fullPath = FullCertPath(testCertFile);
             var cert = X509Certificate.CreateFromSignedFile(fullPath);
             _trustedCerts.Add(cert);
         }
