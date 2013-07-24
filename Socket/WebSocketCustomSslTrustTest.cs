@@ -1,10 +1,12 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
@@ -27,6 +29,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                                                  "bundle");
 
         private TaskCompletionSource<string> _messageReceivedTask;
+        private List<X509Certificate> _trustedCerts;
 
         [TestFixtureSetUp]
         public static void FixtureSetup()
@@ -38,8 +41,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public override void SetUp()
         {
             base.SetUp();
+            _trustedCerts = new List<X509Certificate>();
             _socket = new WebSocketCustomSslTrust(uri: URI,
-                                                  trustedCertChain: null);
+                                                  trustedCertChain: _trustedCerts);
             _thinProcess = null;
             _messageReceivedTask = new TaskCompletionSource<string>();
         }
@@ -109,6 +113,15 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             _messageReceivedTask.SetResult(messageReceived);
         }
 
+        private void AddTrustedCert(string testCertFile)
+        {
+            var basePath = Path.GetFullPath(@"..\..\Socket\test_certs");
+            var fullPath = Path.Combine(basePath,
+                                        testCertFile);
+            var cert = new X509Certificate(fullPath);
+            _trustedCerts.Add(cert);
+        }
+
         [Test]
         public void Cant_connect()
         {
@@ -144,6 +157,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Ssl_but_not_trusted_by_us()
         {
             // arrange
+            AddTrustedCert("trusted.ca.crt");
             StartRubyWebsocketServer("--ssl --ssl-key-file Sockets/test_certs/not_trusted.key --ssl-cert-file Sockets/test_certs/not_trusted.crt");
 
             // act + assert
@@ -156,19 +170,21 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Wrong_hostname()
         {
             // arrange
+            AddTrustedCert("trusted.ca.crt");
+            StartRubyWebsocketServer("--ssl --ssl-key-file Sockets/test_certs/trusted.key --ssl-cert-file Sockets/test_certs/trusted_wronghost.crt");
 
-            // act
-
-            // assert
-            Assert.Fail("write test");
+            // act + assert
+            _socket.Invoking(s => s.Open())
+                   .ShouldThrow<SSLException>()
+                   .WithMessage("The certificate XXX is not part of the trusted list of certificates");
         }
 
         [Test]
         public void Ssl_trusted_by_us()
         {
             // arrange
-            // TODO: Generate certs that we trust here
-            StartRubyWebsocketServer("--ssl --ssl-key-file ssl/rackthin.key --ssl-cert-file ssl/rackthin.crt");
+            AddTrustedCert("trusted.ca.crt");
+            StartRubyWebsocketServer("--ssl --ssl-key-file Sockets/test_certs/trusted.key --ssl-cert-file Sockets/test_certs/trusted.crt");
             _socket.MessageReceived += SocketMessageReceived;
 
             // act
@@ -192,12 +208,13 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Ssl_expired_certificate()
         {
             // arrange
-            // not sure if we can create one, but we can try and make sure this catches it
+            AddTrustedCert("trusted.ca.crt");
+            StartRubyWebsocketServer("--ssl --ssl-key-file Sockets/test_certs/trusted.key --ssl-cert-file Sockets/test_certs/trusted_expired.crt");
 
-            // act
-
-            // assert
-            Assert.Fail("write test");
+            // act + assert
+            _socket.Invoking(s => s.Open())
+                   .ShouldThrow<SSLException>()
+                   .WithMessage("The certificate XXX is expired");
         }
     }
 }
