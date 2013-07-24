@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using WebSocket4Net;
 
@@ -19,6 +20,7 @@ namespace Bsw.WebSocket4NetSslExt.Socket
     {
         private readonly IEnumerable<X509Certificate> _trustedCertChain;
         private readonly string _uri;
+        private SslPolicyErrors _sslPolicyErrors;
 
         /// <summary>
         ///     Constructs a websocket that verifies the server's certificate is signed by someone we explicitly trust
@@ -58,19 +60,21 @@ namespace Bsw.WebSocket4NetSslExt.Socket
                 {
                     sslStream.AuthenticateAsClient(uri.Host);
                 }
+                catch (AuthenticationException authenticationException)
+                {
+                    throw new SSLException(_sslPolicyErrors,
+                                           authenticationException);
+                }
                 catch (IOException ioException)
                 {
-                    if (ioException.HResult == -2146232800)
-                    {
-                        var error =
-                            string.Format(
-                                          "Was able to connect to host '{0}' on port {1} but SSL handshake failed.  Are you sure SSL is running?",
-                                          uri.Host,
-                                          uri.Port);
-                        throw new ConnectionException(error,
-                                                      ioException);
-                    }
-                    throw;
+                    if (ioException.HResult != -2146232800) throw;
+                    var error =
+                        string.Format(
+                                      "Was able to connect to host '{0}' on port {1} but SSL handshake failed.  Are you sure SSL is running?",
+                                      uri.Host,
+                                      uri.Port);
+                    throw new ConnectionException(error,
+                                                  ioException);
                 }
                 finally
                 {
@@ -93,6 +97,11 @@ namespace Bsw.WebSocket4NetSslExt.Socket
                                        X509Chain chain,
                                        SslPolicyErrors sslPolicyErrors)
         {
+            _sslPolicyErrors = sslPolicyErrors;
+            if (sslPolicyErrors != SslPolicyErrors.None)
+            {
+                return false;
+            }
             var actualCertChain = chain
                 .ChainElements
                 .Cast<X509ChainElement>()
