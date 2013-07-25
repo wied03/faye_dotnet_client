@@ -117,7 +117,31 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                 WindowStyle = ProcessWindowStyle.Hidden
                             };
             _thinProcess = Process.Start(procStart);
-            Thread.Sleep(200.Milliseconds());
+            WaitForServerToStart();
+        }
+
+        private static void WaitForServerToStart()
+        {
+            var up = false;
+            for (var i = 0; i < 10; i++)
+            {
+                try
+                {
+                    var tcpClient = new TcpClient("localhost",
+                                                  8132);
+                    tcpClient.Close();
+                    up = true;
+                    break;
+                }
+                catch (Exception)
+                {
+                    Thread.Sleep(50.Milliseconds());
+                }
+            }
+            if (!up)
+            {
+                throw new Exception("Tried 10 times to check server uptime and gave up!");
+            }
         }
 
         private static void SocketOpened(object sender,
