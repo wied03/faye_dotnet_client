@@ -65,6 +65,12 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
 
         private static string GetRubyPath()
         {
+            // allow overrides of path variable
+            var rubyPath = Environment.GetEnvironmentVariable("RUBY_PATH");
+            if (!string.IsNullOrEmpty(rubyPath))
+            {
+                return rubyPath;
+            }
             var sysPath = Environment.GetEnvironmentVariable("PATH");
             Debug.Assert(sysPath != null,
                          "sysPath != null");
