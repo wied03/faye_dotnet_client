@@ -66,6 +66,8 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         private static string GetRubyPath()
         {
             var sysPath = Environment.GetEnvironmentVariable("PATH");
+            Debug.Assert(sysPath != null,
+                         "sysPath != null");
             return sysPath
                 .Split(';')
                 .Select(dir => Path.Combine(dir,
@@ -86,7 +88,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             Process.Start(procStart).WaitForExit();
         }
 
-        private string FullCertPath(string certFile)
+        private static string FullCertPath(string certFile)
         {
             return Path.Combine(BasePath,
                                 certFile);
@@ -111,8 +113,6 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                 Arguments = args,
                                 WorkingDirectory = pathWhereConfigIs,
                                 UseShellExecute = false,
-                                RedirectStandardOutput = true,
-                                RedirectStandardError = true,
                                 CreateNoWindow = true,
                                 WindowStyle = ProcessWindowStyle.Hidden
                             };
@@ -244,7 +244,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             // act + assert
             _socket.Invoking(s => s.Open())
                    .ShouldThrow<SSLException>()
-                   .WithMessage("The certificate XXX is expired");
+                   .WithMessage("The server certificate is not trusted (RemoteCertificateChainErrors)!");
         }
     }
 }
