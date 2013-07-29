@@ -3,6 +3,7 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
 
 #endregion
@@ -13,29 +14,33 @@ namespace Bsw.FayeDotNet.Client
     {
         public FayeClient(IWebSocket socket)
         {
-            
         }
 
-        public void Disconnect()
+        public async Task Connect()
         {
-            
+            throw new NotImplementedException();
         }
 
-        public void Subscribe(string channel,
-                              Action<object> messageReceived)
+        public async Task Disconnect()
         {
-            
+            throw new NotImplementedException();
         }
 
-        public void Unsubscribe(string channel)
+        public async Task Subscribe(string channel,
+                                    Action<object> messageReceived)
         {
-            
+            throw new NotImplementedException();
         }
 
-        public void Publish(string channel,
-                            object message)
+        public async Task Unsubscribe(string channel)
         {
-            
+            throw new NotImplementedException();
+        }
+
+        public async Task Publish(string channel,
+                                  object message)
+        {
+            throw new NotImplementedException();
         }
     }
 }

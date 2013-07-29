@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 // to COM components.  If you need to access a type in this assembly from 
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
+[assembly: InternalsVisibleTo("Bsw.FayeDotNet.Test")]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("a29fa6f1-2e3a-4606-9435-ee5c9822199a")]

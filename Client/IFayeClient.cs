@@ -1,17 +1,23 @@
-﻿using System;
+﻿#region
+
+using System;
+using System.Threading.Tasks;
+
+#endregion
 
 namespace Bsw.FayeDotNet.Client
 {
     public interface IFayeClient
     {
-        void Disconnect();
+        Task Connect();
+        Task Disconnect();
 
-        void Subscribe(string channel,
-                                       Action<object> messageReceived);
+        Task Subscribe(string channel,
+                       Action<object> messageReceived);
 
-        void Unsubscribe(string channel);
+        Task Unsubscribe(string channel);
 
-        void Publish(string channel,
-                                     object message);
+        Task Publish(string channel,
+                     object message);
     }
 }
