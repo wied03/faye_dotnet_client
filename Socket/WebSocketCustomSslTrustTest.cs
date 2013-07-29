@@ -60,6 +60,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
 
         private static void InstallBundlerDependencies()
         {
+            Console.WriteLine("path is {0}",Environment.GetEnvironmentVariable("PATH"));
             var pathWhereConfigIs = Path.GetFullPath(@"..\..");
             var executable = Path.GetFullPath(Path.Combine(pathWhereConfigIs,
                                                            "bundle_install.bat"));
