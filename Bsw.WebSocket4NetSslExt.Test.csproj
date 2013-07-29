@@ -57,9 +57,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.rb" />
+    <None Include="bundle_install.bat" />
     <None Include="config.ru" />
     <None Include="Gemfile" />
     <None Include="packages.config" />
+    <None Include="start_server.bat" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">

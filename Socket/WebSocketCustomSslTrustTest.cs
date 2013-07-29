@@ -27,11 +27,6 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         private static readonly string BasePath = Path.GetFullPath(@"..\..\Socket\test_certs");
         private IWebSocket _socket;
         private Process _thinProcess;
-        // Use Ruby.exe path to avoid batch files which cause problems with Process.Kill()
-        private static readonly string RubyPath = GetRubyPath();
-
-        private static readonly string BundlePath = Path.Combine(Path.GetDirectoryName(RubyPath),
-                                                                 "bundle");
 
         private TaskCompletionSource<string> _messageReceivedTask;
         private List<X509Certificate> _trustedCerts;
@@ -63,26 +58,16 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             base.Teardown();
         }
 
-        private static string GetRubyPath()
-        {
-            var sysPath = Environment.GetEnvironmentVariable("PATH");
-            Debug.Assert(sysPath != null,
-                         "sysPath != null");
-            return sysPath
-                .Split(';')
-                .Select(dir => Path.Combine(dir,
-                                            "ruby.exe"))
-                .First(File.Exists);
-        }
-
         private static void InstallBundlerDependencies()
         {
+            var pathWhereConfigIs = Path.GetFullPath(@"..\..");
+            var executable = Path.GetFullPath(Path.Combine(pathWhereConfigIs,
+                                                           "bundle_install.bat"));
             var procStart = new ProcessStartInfo
                             {
-                                FileName = RubyPath,
+                                FileName = executable,
                                 CreateNoWindow = true,
                                 WindowStyle = ProcessWindowStyle.Hidden,
-                                Arguments = BundlePath + " install",
                                 UseShellExecute = false
                             };
             Process.Start(procStart).WaitForExit();
@@ -97,19 +82,19 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         private void StartRubyWebsocketServer(string keyFile = null,
                                               string certFile = null)
         {
-            var args = BundlePath + " exec thin start -R config.ru -p 8132 -V ";
-            if (keyFile != null)
-            {
-                args += string.Format("--ssl --ssl-key-file {0} --ssl-cert-file {1}",
-                                      FullCertPath(keyFile),
-                                      FullCertPath(certFile));
-            }
+            var args = keyFile != null
+                           ? string.Format("--ssl --ssl-key-file {0} --ssl-cert-file {1}",
+                                           FullCertPath(keyFile),
+                                           FullCertPath(certFile))
+                           : string.Empty;
 
             // don't want to run this inside of bin
             var pathWhereConfigIs = Path.GetFullPath(@"..\..");
+            var executable = Path.GetFullPath(Path.Combine(pathWhereConfigIs,
+                                                           "start_server.bat"));
             var procStart = new ProcessStartInfo
                             {
-                                FileName = RubyPath,
+                                FileName = executable,
                                 Arguments = args,
                                 WorkingDirectory = pathWhereConfigIs,
                                 UseShellExecute = false,
