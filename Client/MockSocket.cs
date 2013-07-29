@@ -27,8 +27,11 @@ namespace Bsw.FayeDotNet.Test.Client
         public void Send(string message)
         {
             MessageSentAction(message);
-            Task.Factory.StartNew(() => MessageReceived(this,
-                                                        new MessageReceivedEventArgs(MessageReceiveAction.Invoke())));
+            if (MessageReceiveAction != null)
+            {
+                Task.Factory.StartNew(() => MessageReceived(this,
+                                                            new MessageReceivedEventArgs(MessageReceiveAction.Invoke())));
+            }
         }
 
         public void Send(byte[] data,

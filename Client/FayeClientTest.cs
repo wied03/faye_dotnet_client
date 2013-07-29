@@ -9,11 +9,10 @@ using System.Threading.Tasks;
 using Bsw.FayeDotNet.Client;
 using Bsw.FayeDotNet.Messages;
 using Bsw.WebSocket4NetSslExt.Socket;
+using FluentAssertions;
 using MsbwTest;
 using Newtonsoft.Json;
 using NUnit.Framework;
-using FluentAssertions;
-using Rhino.Mocks;
 
 #endregion
 
@@ -23,8 +22,11 @@ namespace Bsw.FayeDotNet.Test.Client
     public class FayeClientTest : BaseTest
     {
         #region Test Fields
+
         private IWebSocket _websocket;
-        private List<string> _messagesSent; 
+        private List<string> _messagesSent;
+        private IFayeClient _fayeClient;
+
         #endregion
 
         #region Setup/Teardown
@@ -34,16 +36,17 @@ namespace Bsw.FayeDotNet.Test.Client
         {
             base.SetUp();
             _messagesSent = new List<string>();
-        } 
+            _fayeClient = null;
+            _websocket = null;
+        }
 
         #endregion
 
         #region Utility Methods
-        private async Task<IFayeClient> GetFayeClient()
+
+        private void InstantiateFayeClient()
         {
-            var client = new FayeClient(_websocket);
-            await client.Connect();
-            return client;
+            _fayeClient = new FayeClient(_websocket);
         }
 
         private void SetupWebSocket(IWebSocket webSocket)
@@ -51,35 +54,39 @@ namespace Bsw.FayeDotNet.Test.Client
             _websocket = webSocket;
         }
 
-        private string GetHandshakeResponse(bool successful = true)
+        private static string GetHandshakeResponse(bool successful = true)
         {
             var response =
                 new
                 {
                     channel = HandshakeRequestMessage.HANDSHAKE_MESSAGE,
-                    version = HandshakeRequestMessage.BAYEUX_VERSION_1, 
+                    version = HandshakeRequestMessage.BAYEUX_VERSION_1,
                     successful
                 };
             return JsonConvert.SerializeObject(response);
-        } 
+        }
+
         #endregion
 
         #region Tests
 
         [Test]
-        public void Connect_wrong_connectivity_info()
+        public async Task Connect_wrong_connectivity_info()
         {
             // arrange
             SetupWebSocket(new WebSocketClient(uri: "ws://foobar:8000"));
+            InstantiateFayeClient();
 
             // act + assert
-            this.InvokingAsync(t => t.GetFayeClient())
-                .ShouldThrow<ArgumentNullException>();
-            Assert.Fail("Fix the exception type");
+            var result = await _fayeClient.InvokingAsync(t => t.Connect())
+                                          .ShouldThrow<Exception>();
+            result.Message
+                  .Should()
+                  .Be("Websocket couldn't connect, TBD");
         }
 
         [Test]
-        public void Connect_websocketopens_but_handshake_fails()
+        public async Task Connect_websocketopens_but_handshake_fails()
         {
             // arrange
             var mockSocket = new MockSocket
@@ -90,27 +97,54 @@ namespace Bsw.FayeDotNet.Test.Client
                                                     handler.Invoke(this,
                                                                    new EventArgs());
                                                 },
-                                 MessageSentAction = msg => _messagesSent.Add(msg),
                                  MessageReceiveAction = () =>
                                                         {
                                                             Thread.Sleep(100);
-                                                            return GetHandshakeResponse(successful:false);
+                                                            return GetHandshakeResponse(successful: false);
                                                         }
                              };
-
+            
             SetupWebSocket(mockSocket);
+            InstantiateFayeClient();
 
             // act + assert
-            this.InvokingAsync(t => t.GetFayeClient())
-                .ShouldThrow<Exception>();
-                //.WithMessage("Should be some exception indicating the handshake failed");
-
-            // assert
-            Assert.Fail("write test");
+            var result = await _fayeClient.InvokingAsync(t => t.Connect())
+                                          .ShouldThrow<HandshakeException>();
+            result.Message
+                  .Should()
+                  .Be("Handshaking with server failed.  Response from server was: foobar");
         }
 
         [Test]
-        public void Connect_websocketopens_but_handshake_times_out()
+        public async Task Connect_websocketopens_but_handshake_times_out()
+        {
+            // arrange
+            var mockSocket = new MockSocket
+                             {
+                                 OpenedAction = handler =>
+                                                {
+                                                    Thread.Sleep(100);
+                                                    handler.Invoke(this,
+                                                                   new EventArgs());
+                                                }
+                             };
+            
+            SetupWebSocket(mockSocket);
+            InstantiateFayeClient();
+            _fayeClient.HandshakeTimeout = 150.Milliseconds();
+
+            // act
+            var result = await _fayeClient.InvokingAsync(t => t.Connect())
+                                          .ShouldThrow<HandshakeException>();
+
+            // assert
+            result.Message
+                  .Should()
+                  .Be("Timed out at 150 milliseconds waiting for server to respond to handshake request.");
+        }
+
+        [Test]
+        public async Task Connect_handshake_completes_ok()
         {
             // arrange
 
@@ -121,7 +155,7 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public void Connect_handshake_completes()
+        public async Task Disconnect()
         {
             // arrange
 
@@ -132,7 +166,7 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public void Connect_lost_connection_retry_happens_properly()
+        public async Task Connect_lost_connection_retry_happens_properly()
         {
             // arrange
 
@@ -143,7 +177,7 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public void Subscribe()
+        public async Task Subscribe()
         {
             // arrange
 
@@ -154,7 +188,7 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public void Unsubscribe()
+        public async Task Unsubscribe()
         {
             // arrange
 
@@ -165,7 +199,7 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public void Publish()
+        public async Task Publish()
         {
             // arrange
 
