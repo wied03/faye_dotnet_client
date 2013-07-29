@@ -44,14 +44,23 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="WebSocket4Net">
+      <HintPath>..\..\..\nuget_pkg_lnk\WebSocket4Net.0.8\lib\net40\WebSocket4Net.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseTest.cs" />
+    <Compile Include="Client\FayeClientTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bsw.FayeDotNet\Bsw.FayeDotNet.csproj">
       <Project>{76b47907-4129-41f6-9b96-7b5a32710705}</Project>
       <Name>Bsw.FayeDotNet</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">
+      <Project>{CC00141A-B9C4-47B3-89E2-FCD842875325}</Project>
+      <Name>Bsw.WebSocket4NetSslExt</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
