@@ -10,11 +10,19 @@ using Bsw.WebSocket4NetSslExt.Socket;
 
 namespace Bsw.FayeDotNet.Client
 {
+    /// <summary>
+    /// Implementation with 10 second default timeout
+    /// </summary>
     public class FayeClient : IFayeClient
     {
         public FayeClient(IWebSocket socket)
         {
+            HandshakeTimeout = new TimeSpan(0,
+                                            0,
+                                            10);
         }
+
+        public TimeSpan HandshakeTimeout { get; set; }
 
         public async Task Connect()
         {
