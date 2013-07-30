@@ -52,13 +52,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         [TearDown]
         public override void Teardown()
         {
-            // TODO: Move this code into RubyProcess
             if (_websocketProcess.Started)
             {
-                var file = File.Create(_websocketProcess.ShutdownTriggerPath);
-                _websocketProcess.WaitForShutdown();
-                file.Close();
-                File.Delete(_websocketProcess.ShutdownTriggerPath);
+                _websocketProcess.GracefulShutdown();
             }
             base.Teardown();
         }
