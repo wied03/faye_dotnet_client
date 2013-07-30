@@ -44,6 +44,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Client\FayeConnectionException.cs" />
     <Compile Include="Client\FayeClient.cs" />
     <Compile Include="Client\FayeConnection.cs" />
     <Compile Include="Client\HandshakeException.cs" />
