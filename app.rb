@@ -7,6 +7,7 @@ App = lambda do |env|
       ws = Faye::WebSocket.new(env,"isonas")
 
       ws.on :message do |event|
+		exit! if (event.data == "shutdownserver")
         puts "got message '#{event.data}'"       
         ws.send("Received your message "+event.data)
       end

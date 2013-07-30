@@ -20,7 +20,6 @@ using WebSocket4Net;
 namespace Bsw.WebSocket4NetSslExt.Test.Socket
 {
     [TestFixture]
-    [Explicit("Problems on CI box with the Ruby server starting and stopping")]
     public class WebSocketCustomSslTrustTest : BaseTest
     {
         private const string URI = "wss://localhost:8132";
@@ -55,7 +54,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         {
             if (_thinProcess != null)
             {
-                ProcessUtilities.KillProcessTree(_thinProcess);
+                _socket.Send("shutdownserver");
+                _thinProcess.WaitForExit();
+                _thinProcess.Close();
             }
             base.Teardown();
         }
@@ -80,14 +81,29 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                 certFile);
         }
 
+        private static string GetThinPath()
+        {
+            var sysPath = Environment.GetEnvironmentVariable("PATH");
+            Debug.Assert(sysPath != null,
+                         "sysPath != null");
+            return sysPath
+                .Split(';')
+                .Select(dir => Path.Combine(dir,
+                                            "thin"))
+                .First(File.Exists);
+        }
+
+
         private void StartRubyWebsocketServer(string keyFile = null,
                                               string certFile = null)
         {
+            var thinPath = GetThinPath();
             var args = keyFile != null
-                           ? string.Format("--ssl --ssl-key-file {0} --ssl-cert-file {1}",
+                           ? string.Format("{0} --ssl --ssl-key-file {1} --ssl-cert-file {2}",
+                                           thinPath,
                                            FullCertPath(keyFile),
                                            FullCertPath(certFile))
-                           : string.Empty;
+                           : thinPath;
 
             // don't want to run this inside of bin
             var executable = Path.GetFullPath(Path.Combine(RootAssemblyPath,
@@ -99,9 +115,19 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                 WorkingDirectory = RootAssemblyPath,
                                 UseShellExecute = false,
                                 CreateNoWindow = true,
-                                WindowStyle = ProcessWindowStyle.Hidden
+                                RedirectStandardOutput = true,
+                                RedirectStandardInput = true,
+                                RedirectStandardError = true,
                             };
-            _thinProcess = Process.Start(procStart);
+            _thinProcess = new Process {StartInfo = procStart};
+            _thinProcess.OutputDataReceived += (sender,
+                                                eventArgs) => Console.WriteLine(eventArgs.Data);
+            _thinProcess.ErrorDataReceived += (sender,
+                                               eventArgs) => Console.WriteLine(eventArgs.Data);
+            _thinProcess.Start();
+            _thinProcess.BeginOutputReadLine();
+            _thinProcess.BeginErrorReadLine();
+
             WaitForServerToStart();
         }
 
@@ -112,8 +138,11 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             {
                 try
                 {
-                    var tcpClient = new TcpClient("localhost",
-                                                  8132);
+                    var tcpClient = new TcpClient();
+                    var result = tcpClient.ConnectAsync("localhost",
+                                                        8132);
+                    var noTimeout = result.Wait(3.Seconds());
+                    if (!noTimeout) continue;
                     tcpClient.Close();
                     up = true;
                     break;
