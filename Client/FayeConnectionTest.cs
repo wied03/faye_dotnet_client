@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Client;
 using Bsw.WebSocket4NetSslExt.Socket;
+using MsbwTest;
 using NUnit.Framework;
 using FluentAssertions;
 
@@ -68,11 +69,17 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Disconnect()
         {
             // arrange
+            var socket = new WebSocketClient(uri: "ws://weez.weez.wied.us:8313");
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
 
             // act
+            await _connection.Disconnect();
 
             // assert
-            Assert.Fail("write test");
+            await _connection.InvokingAsync(c => c.Disconnect())
+                             .ShouldThrow<FayeConnectionException>();
         }
 
         [Test]
