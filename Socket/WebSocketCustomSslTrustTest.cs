@@ -29,6 +29,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         private TaskCompletionSource<string> _messageReceivedTask;
         private List<X509Certificate> _trustedCerts;
         private RubyProcess _websocketProcess;
+        private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
 
         [TestFixtureSetUp]
         public static void FixtureSetup()
@@ -44,42 +45,22 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             _socket = new WebSocketCustomSslTrust(uri: URI,
                                                   trustedCertChain: _trustedCerts);
             _websocketProcess = new RubyProcess(thinPort: 8132,
-                                                workingDirectory: Path.GetFullPath(@"..\.."));
+                                                workingDirectory: WorkingDirectory);
             _messageReceivedTask = new TaskCompletionSource<string>();
         }
 
         [TearDown]
         public override void Teardown()
         {
+            // TODO: Move this code into RubyProcess
             if (_websocketProcess.Started)
             {
-                var controlSocket = ControlSocket;
-                controlSocket.Send("shutdownserver");
+                var file = File.Create(_websocketProcess.ShutdownTriggerPath);
                 _websocketProcess.WaitForShutdown();
+                file.Close();
+                File.Delete(_websocketProcess.ShutdownTriggerPath);
             }
             base.Teardown();
-        }
-
-        private IWebSocket ControlSocket
-        {
-            get
-            {
-                var sslEnabled = _websocketProcess.ThinSslKeyFile != null;
-                var uriPrefix = sslEnabled
-                                    ? "wss"
-                                    : "ws";
-                var uri = string.Format("{0}://{1}:{2}",
-                                        uriPrefix,
-                                        "localhost",
-                                        _websocketProcess.ThinPort);
-                var socket = new WebSocketClient(uri: uri);
-                var tcs = new TaskCompletionSource<bool>();
-                socket.Opened += (sender,
-                                  args) => tcs.SetResult(true);
-                socket.Open();
-                tcs.Task.Wait();
-                return socket;
-            }
         }
 
         private static string FullCertPath(string certFile)
