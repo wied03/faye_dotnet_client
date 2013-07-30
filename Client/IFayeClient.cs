@@ -13,15 +13,12 @@ namespace Bsw.FayeDotNet.Client
         /// After this span has passed, an exception will be thrown when trying to connect/handshake with the server
         /// </summary>
         TimeSpan HandshakeTimeout { get; set; }
-        Task Connect();
-        Task Disconnect();
 
-        Task Subscribe(string channel,
-                       Action<object> messageReceived);
-
-        Task Unsubscribe(string channel);
-
-        Task Publish(string channel,
-                     object message);
+        /// <summary>
+        /// Opens a connection and handshakes with the server
+        /// </summary>
+        /// <returns>A connection that can be used for publishing/subscribing</returns>
+        /// <exception cref="HandshakeException">Problem in the handshaking process</exception>
+        Task<IFayeConnection> Connect();
     }
 }

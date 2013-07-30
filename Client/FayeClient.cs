@@ -24,29 +24,7 @@ namespace Bsw.FayeDotNet.Client
 
         public TimeSpan HandshakeTimeout { get; set; }
 
-        public async Task Connect()
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task Disconnect()
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task Subscribe(string channel,
-                                    Action<object> messageReceived)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task Unsubscribe(string channel)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task Publish(string channel,
-                                  object message)
+        public async Task<IFayeConnection> Connect()
         {
             throw new NotImplementedException();
         }
