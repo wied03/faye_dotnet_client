@@ -26,6 +26,7 @@ namespace Bsw.FayeDotNet.Test.Client
         private IWebSocket _websocket;
         private List<string> _messagesSent;
         private IFayeClient _fayeClient;
+        private IFayeConnection _connection;
 
         #endregion
 
@@ -38,6 +39,17 @@ namespace Bsw.FayeDotNet.Test.Client
             _messagesSent = new List<string>();
             _fayeClient = null;
             _websocket = null;
+            _connection = null;
+        }
+
+        [TearDown]
+        public override void Teardown()
+        {
+            if (_connection != null)
+            {
+                _connection.Disconnect().Wait();
+            }
+            base.Teardown();
         }
 
         #endregion
@@ -147,66 +159,18 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Connect_handshake_completes_ok()
         {
             // arrange
+            var socket = new WebSocketClient(uri: "ws://weez.weez.wied.us:8313");
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
 
             // act
+            _connection = await _fayeClient.Connect();
 
             // assert
-            Assert.Fail("write test");
-        }
-
-        [Test]
-        public async Task Disconnect()
-        {
-            // arrange
-
-            // act
-
-            // assert
-            Assert.Fail("write test");
-        }
-
-        [Test]
-        public async Task Connect_lost_connection_retry_happens_properly()
-        {
-            // arrange
-
-            // act
-
-            // assert
-            Assert.Fail("write test");
-        }
-
-        [Test]
-        public async Task Subscribe()
-        {
-            // arrange
-
-            // act
-
-            // assert
-            Assert.Fail("write test");
-        }
-
-        [Test]
-        public async Task Unsubscribe()
-        {
-            // arrange
-
-            // act
-
-            // assert
-            Assert.Fail("write test");
-        }
-
-        [Test]
-        public async Task Publish()
-        {
-            // arrange
-
-            // act
-
-            // assert
-            Assert.Fail("write test");
+            _connection
+                .ClientId
+                .Should()
+                .NotBeNullOrEmpty();
         }
 
         #endregion

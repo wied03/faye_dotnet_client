@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="BaseTest.cs" />
     <Compile Include="Client\FayeClientTest.cs" />
+    <Compile Include="Client\FayeConnectionTest.cs" />
     <Compile Include="Client\MockSocket.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
