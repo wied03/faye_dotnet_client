@@ -1,7 +1,7 @@
 require 'faye/websocket'
 
 puts "Loading websocket..."
-# TODO: Move this to the Ruby project
+
 Thread.new {
 	shutdownTrigger = ENV['SHUTDOWN']
 	puts "Watching for shutdown trigger #{shutdownTrigger}"
