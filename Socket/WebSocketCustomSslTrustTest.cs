@@ -2,14 +2,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using System.Threading.Tasks;
+using Bsw.RubyExecution;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
 using NUnit.Framework;
@@ -26,16 +25,15 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         private const string TEST_MESSAGE = "hi there";
         private static readonly string BaseCertPath = Path.GetFullPath(@"..\..\Socket\test_certs");
         private IWebSocket _socket;
-        private Process _thinProcess;
 
         private TaskCompletionSource<string> _messageReceivedTask;
         private List<X509Certificate> _trustedCerts;
-        private static readonly string RootAssemblyPath = Path.GetFullPath(@"..\..");
+        private RubyProcess _websocketProcess;
 
         [TestFixtureSetUp]
         public static void FixtureSetup()
         {
-            InstallBundlerDependencies();
+            RubyProcess.InstallBundlerDependencies();
         }
 
         [SetUp]
@@ -45,34 +43,43 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             _trustedCerts = new List<X509Certificate>();
             _socket = new WebSocketCustomSslTrust(uri: URI,
                                                   trustedCertChain: _trustedCerts);
-            _thinProcess = null;
+            _websocketProcess = new RubyProcess(thinPort: 8132,
+                                                workingDirectory: Path.GetFullPath(@"..\.."));
             _messageReceivedTask = new TaskCompletionSource<string>();
         }
 
         [TearDown]
         public override void Teardown()
         {
-            if (_thinProcess != null)
+            if (_websocketProcess.Started)
             {
-                _socket.Send("shutdownserver");
-                _thinProcess.WaitForExit();
-                _thinProcess.Close();
+                var controlSocket = ControlSocket;
+                controlSocket.Send("shutdownserver");
+                _websocketProcess.WaitForShutdown();
             }
             base.Teardown();
         }
 
-        private static void InstallBundlerDependencies()
+        private IWebSocket ControlSocket
         {
-            var executable = Path.GetFullPath(Path.Combine(RootAssemblyPath,
-                                                           "bundle_install.bat"));
-            var procStart = new ProcessStartInfo
-                            {
-                                FileName = executable,
-                                CreateNoWindow = true,
-                                WindowStyle = ProcessWindowStyle.Hidden,
-                                UseShellExecute = false
-                            };
-            Process.Start(procStart).WaitForExit();
+            get
+            {
+                var sslEnabled = _websocketProcess.ThinSslKeyFile != null;
+                var uriPrefix = sslEnabled
+                                    ? "wss"
+                                    : "ws";
+                var uri = string.Format("{0}://{1}:{2}",
+                                        uriPrefix,
+                                        "localhost",
+                                        _websocketProcess.ThinPort);
+                var socket = new WebSocketClient(uri: uri);
+                var tcs = new TaskCompletionSource<bool>();
+                socket.Opened += (sender,
+                                  args) => tcs.SetResult(true);
+                socket.Open();
+                tcs.Task.Wait();
+                return socket;
+            }
         }
 
         private static string FullCertPath(string certFile)
@@ -81,81 +88,11 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
                                 certFile);
         }
 
-        private static string GetThinPath()
+        private void SetupCerts(string keyFile,
+                                string certFile)
         {
-            var sysPath = Environment.GetEnvironmentVariable("PATH");
-            Debug.Assert(sysPath != null,
-                         "sysPath != null");
-            return sysPath
-                .Split(';')
-                .Select(dir => Path.Combine(dir,
-                                            "thin"))
-                .First(File.Exists);
-        }
-
-
-        private void StartRubyWebsocketServer(string keyFile = null,
-                                              string certFile = null)
-        {
-            var thinPath = GetThinPath();
-            var args = keyFile != null
-                           ? string.Format("{0} --ssl --ssl-key-file {1} --ssl-cert-file {2}",
-                                           thinPath,
-                                           FullCertPath(keyFile),
-                                           FullCertPath(certFile))
-                           : thinPath;
-
-            // don't want to run this inside of bin
-            var executable = Path.GetFullPath(Path.Combine(RootAssemblyPath,
-                                                           "start_server.bat"));
-            var procStart = new ProcessStartInfo
-                            {
-                                FileName = executable,
-                                Arguments = args,
-                                WorkingDirectory = RootAssemblyPath,
-                                UseShellExecute = false,
-                                CreateNoWindow = true,
-                                RedirectStandardOutput = true,
-                                RedirectStandardInput = true,
-                                RedirectStandardError = true,
-                            };
-            _thinProcess = new Process {StartInfo = procStart};
-            _thinProcess.OutputDataReceived += (sender,
-                                                eventArgs) => Console.WriteLine(eventArgs.Data);
-            _thinProcess.ErrorDataReceived += (sender,
-                                               eventArgs) => Console.WriteLine(eventArgs.Data);
-            _thinProcess.Start();
-            _thinProcess.BeginOutputReadLine();
-            _thinProcess.BeginErrorReadLine();
-
-            WaitForServerToStart();
-        }
-
-        private static void WaitForServerToStart()
-        {
-            var up = false;
-            for (var i = 0; i < 10; i++)
-            {
-                try
-                {
-                    var tcpClient = new TcpClient();
-                    var result = tcpClient.ConnectAsync("localhost",
-                                                        8132);
-                    var noTimeout = result.Wait(3.Seconds());
-                    if (!noTimeout) continue;
-                    tcpClient.Close();
-                    up = true;
-                    break;
-                }
-                catch (Exception)
-                {
-                    Thread.Sleep(50.Milliseconds());
-                }
-            }
-            if (!up)
-            {
-                throw new Exception("Tried 10 times to check server uptime and gave up!");
-            }
+            _websocketProcess.ThinSslCertFile = FullCertPath(certFile);
+            _websocketProcess.ThinSslKeyFile = FullCertPath(keyFile);
         }
 
         private static void SocketOpened(object sender,
@@ -200,7 +137,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Not_ssl()
         {
             // arrange
-            StartRubyWebsocketServer();
+            _websocketProcess.StartThinServer();
 
             // act + assert
             _socket.Invoking(s => s.Open())
@@ -221,8 +158,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         public void Ssl_but_not_trusted_by_us()
         {
             // arrange
-            StartRubyWebsocketServer(keyFile: "not_trusted.key",
-                                     certFile: "not_trusted.crt");
+            SetupCerts(keyFile: "not_trusted.key",
+                       certFile: "not_trusted.crt");
+            _websocketProcess.StartThinServer();
             SetupOurTrustedCertToBe("trusted.ca.crt");
 
             // act + assert
@@ -236,8 +174,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         {
             // arrange
             SetupOurTrustedCertToBe("trusted.ca.crt");
-            StartRubyWebsocketServer(keyFile: "trusted.key",
-                                     certFile: "trusted_wronghost.crt");
+            SetupCerts(keyFile: "trusted.key",
+                       certFile: "trusted_wronghost.crt");
+            _websocketProcess.StartThinServer();
 
             // act + assert
             _socket.Invoking(s => s.Open())
@@ -250,8 +189,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         {
             // arrange
             SetupOurTrustedCertToBe("trusted.ca.crt");
-            StartRubyWebsocketServer(keyFile: "trusted.key",
-                                     certFile: "trusted.crt");
+            SetupCerts(keyFile: "trusted.key",
+                       certFile: "trusted.crt");
+            _websocketProcess.StartThinServer();
             _socket.MessageReceived += SocketMessageReceived;
 
             // act
@@ -276,8 +216,9 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
         {
             // arrange
             SetupOurTrustedCertToBe("trusted.ca.crt");
-            StartRubyWebsocketServer(keyFile: "trusted.key",
-                                     certFile: "trusted_expired.crt");
+            SetupCerts(keyFile: "trusted.key",
+                       certFile: "trusted_expired.crt");
+            _websocketProcess.StartThinServer();
 
             // act + assert
             _socket.Invoking(s => s.Open())

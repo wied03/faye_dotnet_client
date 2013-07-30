@@ -56,16 +56,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.rb" />
-    <None Include="bundle_install.bat" />
     <None Include="config.ru" />
     <None Include="Gemfile" />
     <None Include="packages.config" />
-    <None Include="start_server.bat" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">
       <Project>{cc00141a-b9c4-47b3-89e2-fcd842875325}</Project>
       <Name>Bsw.WebSocket4NetSslExt</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Bsw.RubyExecution\Bsw.RubyExecution.csproj">
+      <Project>{ef2da0b4-bc3d-4625-9abe-e3ac66d7cd57}</Project>
+      <Name>Bsw.RubyExecution</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
