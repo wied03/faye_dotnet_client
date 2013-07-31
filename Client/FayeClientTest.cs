@@ -2,12 +2,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Client;
 using Bsw.FayeDotNet.Messages;
+using Bsw.RubyExecution;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
 using MsbwTest;
@@ -27,10 +29,18 @@ namespace Bsw.FayeDotNet.Test.Client
         private List<string> _messagesSent;
         private IFayeClient _fayeClient;
         private IFayeConnection _connection;
+        private RubyProcess _websocketProcess;
+        private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
 
         #endregion
 
         #region Setup/Teardown
+
+        [TestFixtureSetUp]
+        public static void FixtureSetup()
+        {
+            RubyProcess.InstallBundlerDependencies();
+        }
 
         [SetUp]
         public override void SetUp()
@@ -40,6 +50,8 @@ namespace Bsw.FayeDotNet.Test.Client
             _fayeClient = null;
             _websocket = null;
             _connection = null;
+            _websocketProcess = new RubyProcess(thinPort: 8132,
+                                                workingDirectory: WorkingDirectory);
         }
 
         [TearDown]
@@ -48,6 +60,10 @@ namespace Bsw.FayeDotNet.Test.Client
             if (_connection != null)
             {
                 _connection.Disconnect().Wait();
+            }
+            if (_websocketProcess.Started)
+            {
+                _websocketProcess.GracefulShutdown();
             }
             base.Teardown();
         }
