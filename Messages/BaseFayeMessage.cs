@@ -3,6 +3,7 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using Newtonsoft.Json;
 
 #endregion
 
@@ -16,5 +17,10 @@ namespace Bsw.FayeDotNet.Messages
         }
 
         public string channel { get; private set; }
+
+        public string ToJsonObject()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
     }
 }
