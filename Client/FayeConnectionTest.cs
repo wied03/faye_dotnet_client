@@ -11,7 +11,6 @@ using Bsw.RubyExecution;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsbwTest;
 using NUnit.Framework;
-using FluentAssertions;
 
 #endregion
 
@@ -26,7 +25,7 @@ namespace Bsw.FayeDotNet.Test.Client
         private List<string> _messagesSent;
         private IFayeClient _fayeClient;
         private IFayeConnection _connection;
-        private RubyProcess _websocketProcess;
+        private RubyProcess _fayeServerProcess;
         private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
 
         #endregion
@@ -47,8 +46,8 @@ namespace Bsw.FayeDotNet.Test.Client
             _fayeClient = null;
             _websocket = null;
             _connection = null;
-            _websocketProcess = new RubyProcess(thinPort: 8132,
-                                                workingDirectory: WorkingDirectory);
+            _fayeServerProcess = new RubyProcess(thinPort: 8132,
+                                                 workingDirectory: WorkingDirectory);
         }
 
         [TearDown]
@@ -58,9 +57,9 @@ namespace Bsw.FayeDotNet.Test.Client
             {
                 _connection.Disconnect().Wait();
             }
-            if (_websocketProcess.Started)
+            if (_fayeServerProcess.Started)
             {
-                _websocketProcess.GracefulShutdown();
+                _fayeServerProcess.GracefulShutdown();
             }
             base.Teardown();
         }
@@ -77,7 +76,7 @@ namespace Bsw.FayeDotNet.Test.Client
         private void SetupWebSocket(IWebSocket webSocket)
         {
             _websocket = webSocket;
-        } 
+        }
 
         #endregion
 
@@ -87,7 +86,7 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Disconnect()
         {
             // arrange
-            var socket = new WebSocketClient(uri: "ws://weez.weez.wied.us:8313");
+            var socket = new WebSocketClient(uri: "ws://localhost:8132");
             SetupWebSocket(socket);
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
@@ -143,7 +142,7 @@ namespace Bsw.FayeDotNet.Test.Client
             // assert
             Assert.Fail("write test");
         }
- 
+
         #endregion
     }
 }

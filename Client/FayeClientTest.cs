@@ -29,7 +29,7 @@ namespace Bsw.FayeDotNet.Test.Client
         private List<string> _messagesSent;
         private IFayeClient _fayeClient;
         private IFayeConnection _connection;
-        private RubyProcess _websocketProcess;
+        private RubyProcess _fayeServerProcess;
         private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
 
         #endregion
@@ -50,7 +50,7 @@ namespace Bsw.FayeDotNet.Test.Client
             _fayeClient = null;
             _websocket = null;
             _connection = null;
-            _websocketProcess = new RubyProcess(thinPort: 8132,
+            _fayeServerProcess = new RubyProcess(thinPort: 8132,
                                                 workingDirectory: WorkingDirectory);
         }
 
@@ -61,9 +61,9 @@ namespace Bsw.FayeDotNet.Test.Client
             {
                 _connection.Disconnect().Wait();
             }
-            if (_websocketProcess.Started)
+            if (_fayeServerProcess.Started)
             {
-                _websocketProcess.GracefulShutdown();
+                _fayeServerProcess.GracefulShutdown();
             }
             base.Teardown();
         }
@@ -175,7 +175,8 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Connect_handshake_completes_ok()
         {
             // arrange
-            var socket = new WebSocketClient(uri: "ws://weez.weez.wied.us:8313");
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: "ws://localhost:8132");
             SetupWebSocket(socket);
             InstantiateFayeClient();
 
