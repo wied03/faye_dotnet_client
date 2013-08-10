@@ -26,9 +26,14 @@ namespace Bsw.FayeDotNet.Client
 
         public string ClientId { get; private set; }
 
-        public Task Disconnect()
+        public async Task Disconnect()
         {
-            throw new NotImplementedException();
+            var tcs = new TaskCompletionSource<bool>();
+            EventHandler closed = (sender,
+                                   args) => tcs.SetResult(true);
+            _socket.Closed += closed;
+            _socket.Close("Disconnection Requested");
+            await tcs.Task;
         }
 
         public Task Subscribe(string channel,
