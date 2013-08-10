@@ -176,7 +176,7 @@ namespace Bsw.FayeDotNet.Test.Client
         {
             // arrange
             _fayeServerProcess.StartThinServer();
-            var socket = new WebSocketClient(uri: "ws://localhost:8132");
+            var socket = new WebSocketClient(uri: "ws://localhost:8132/bayeux");
             SetupWebSocket(socket);
             InstantiateFayeClient();
 
