@@ -8,9 +8,6 @@ using Bsw.FayeDotNet.Messages;
 using Bsw.FayeDotNet.Serialization;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 using NLog;
 using WebSocket4Net;
 using ErrorEventArgs = SuperSocket.ClientEngine.ErrorEventArgs;
@@ -50,7 +47,16 @@ namespace Bsw.FayeDotNet.Client
         private async Task<IFayeConnection> Handshake()
         {
             var message = new HandshakeRequestMessage(new[] {ONLY_SUPPORTED_CONNECTION_TYPE});
-            var result = await ExecuteControlMessage<HandshakeResponseMessage>(message);
+            HandshakeResponseMessage result;
+            try
+            {
+                result = await ExecuteControlMessage<HandshakeResponseMessage>(message,
+                                                                               HandshakeTimeout);
+            }
+            catch (TimeoutException)
+            {
+                throw new HandshakeException(HandshakeTimeout);
+            }
             if (result.Successful)
             {
                 return new FayeConnection(_socket,
@@ -59,7 +65,7 @@ namespace Bsw.FayeDotNet.Client
             throw new HandshakeException(SUCCESSFUL_FALSE);
         }
 
-        private async Task<T> ExecuteControlMessage<T>(BaseFayeMessage message) where T : BaseFayeMessage
+        private async Task<T> ExecuteControlMessage<T>(BaseFayeMessage message,TimeSpan timeoutValue) where T : BaseFayeMessage
         {
             var json = _converter.Serialize(message);
             var tcs = new TaskCompletionSource<MessageReceivedEventArgs>();
@@ -67,9 +73,14 @@ namespace Bsw.FayeDotNet.Client
                                                                args) => tcs.SetResult(args);
             _socket.MessageReceived += received;
             _socket.Send(json);
-            var result = await tcs.Task;
+            var task = tcs.Task;
+            var result = await task.Timeout(timeoutValue);
+            if (result == Result.Timeout)
+            {
+                throw new TimeoutException();
+            }
             _socket.MessageReceived -= received;
-            return _converter.Deserialize<T>(result.Message);
+            return _converter.Deserialize<T>(task.Result.Message);
         }
 
         private async Task OpenWebSocket()
