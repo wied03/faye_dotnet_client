@@ -13,15 +13,18 @@ namespace Bsw.FayeDotNet.Messages
     {
         internal const string HANDSHAKE_MESSAGE = "/meta/handshake";
         internal const string BAYEUX_VERSION_1 = "1.0";
-        public string version { get; private set; }
-        public List<string> supportedConnectionTypes { get; private set; }
+        public string Version { get; private set; }
+        public List<string> SupportedConnectionTypes { get; private set; }
 
-        public HandshakeRequestMessage(IEnumerable<string> theSupportedConnectionTypes,
-                                       string theVersion = BAYEUX_VERSION_1)
+        // for JSON deserializer
+        public HandshakeRequestMessage() : base(HANDSHAKE_MESSAGE) { }
+
+        public HandshakeRequestMessage(IEnumerable<string> supportedConnectionTypes,
+                                       string version = BAYEUX_VERSION_1)
             : base(HANDSHAKE_MESSAGE)
         {
-            version = theVersion;
-            supportedConnectionTypes = new List<string>(theSupportedConnectionTypes);
+            Version = version;
+            SupportedConnectionTypes = new List<string>(supportedConnectionTypes);
         }
     }
 }

@@ -56,13 +56,13 @@
     <Compile Include="Client\FayeConnectionException.cs" />
     <Compile Include="Client\FayeClient.cs" />
     <Compile Include="Client\FayeConnection.cs" />
+    <Compile Include="Client\FayeJsonConverter.cs" />
     <Compile Include="Client\HandshakeException.cs" />
     <Compile Include="Client\IFayeConnection.cs" />
     <Compile Include="Messages\BaseFayeMessage.cs" />
     <Compile Include="Client\IFayeClient.cs" />
     <Compile Include="Messages\HandshakeRequestMessage.cs" />
     <Compile Include="Messages\HandshakeResponseMessage.cs" />
-    <Compile Include="Messages\MetaMessageResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -7,29 +7,34 @@ using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using NLog;
-using SuperSocket.ClientEngine;
+using WebSocket4Net;
+using ErrorEventArgs = SuperSocket.ClientEngine.ErrorEventArgs;
 
 #endregion
 
 namespace Bsw.FayeDotNet.Client
 {
     /// <summary>
-    /// Implementation with 10 second default timeout
+    ///     Implementation with 10 second default timeout
     /// </summary>
     public class FayeClient : IFayeClient
     {
         private const string ONLY_SUPPORTED_CONNECTION_TYPE = "websocket";
         private readonly IWebSocket _socket;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly FayeJsonConverter _converter;
 
         public FayeClient(IWebSocket socket)
         {
             _socket = socket;
-            
             HandshakeTimeout = new TimeSpan(0,
                                             0,
                                             10);
+            _converter = new FayeJsonConverter();
         }
 
         public TimeSpan HandshakeTimeout { get; set; }
@@ -37,21 +42,33 @@ namespace Bsw.FayeDotNet.Client
         public async Task<IFayeConnection> Connect()
         {
             await OpenWebSocket();
+            return await Handshake();
+        }
 
+        private async Task<IFayeConnection> Handshake()
+        {
+            var message = new HandshakeRequestMessage(new[] {ONLY_SUPPORTED_CONNECTION_TYPE});
+            var result = await ExecuteControlMessage<HandshakeResponseMessage>(message);
+            if (result.Successful)
+            {
+                return new FayeConnection(_socket,
+                                          result);
+            }
+            // TODO: Deal with unsuccessful handshake
             throw new NotImplementedException();
         }
 
-        private async Task Handshake()
+        private async Task<T> ExecuteControlMessage<T>(BaseFayeMessage message) where T : BaseFayeMessage
         {
-            var message = new HandshakeRequestMessage(new[] {ONLY_SUPPORTED_CONNECTION_TYPE});
-            var result = await RequestResponse<HandshakeResponseMessage>(message);
-
-        }
-
-        private async Task<T> RequestResponse<T>(BaseFayeMessage message) where T : BaseFayeMessage
-        {
-            var json = message.ToJsonObject();
+            var json = _converter.Serialize(message);
+            var tcs = new TaskCompletionSource<MessageReceivedEventArgs>();
+            EventHandler<MessageReceivedEventArgs> received = (sender,
+                                                               args) => tcs.SetResult(args);
+            _socket.MessageReceived += received;
             _socket.Send(json);
+            var result = await tcs.Task;
+            _socket.MessageReceived -= received;
+            return _converter.Deserialize<T>(result.Message);
         }
 
         private async Task OpenWebSocket()
@@ -63,11 +80,11 @@ namespace Bsw.FayeDotNet.Client
             _socket.Opened += socketOnOpened;
             Exception exception = null;
             EventHandler<ErrorEventArgs> socketOnError = (sender,
-                                          args) =>
-                                         {
-                                             exception = args.Exception;
-                                             tcs.SetResult(false);
-                                         };
+                                                          args) =>
+                                                         {
+                                                             exception = args.Exception;
+                                                             tcs.SetResult(false);
+                                                         };
             _socket.Error += socketOnError;
             _socket.Open();
             var task = tcs.Task;

@@ -11,17 +11,20 @@ namespace Bsw.FayeDotNet.Messages
 {
     internal class HandshakeResponseMessage : HandshakeRequestMessage
     {
-        public MetaMessageResult Result { get; private set; }
+        public bool Successful { get; private set; }
         public string ClientId { get; private set; }
 
-        public HandshakeResponseMessage(IEnumerable<string> theSupportedConnectionTypes,
-                                        MetaMessageResult result,
+        // for JSON deserializer
+        public HandshakeResponseMessage() : base() { }
+
+        public HandshakeResponseMessage(IEnumerable<string> supportedConnectionTypes,
+                                        bool successful,
                                         string clientId,
-                                        string theVersion = BAYEUX_VERSION_1)
-            : base(theSupportedConnectionTypes,
-                   theVersion)
+                                        string version = BAYEUX_VERSION_1)
+            : base(supportedConnectionTypes,
+                   version)
         {
-            Result = result;
+            Successful = successful;
             ClientId = clientId;
         }
     }

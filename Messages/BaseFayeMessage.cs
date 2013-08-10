@@ -13,14 +13,9 @@ namespace Bsw.FayeDotNet.Messages
     {
         protected BaseFayeMessage(string theChannel)
         {
-            channel = theChannel;
+            Channel = theChannel;
         }
 
-        public string channel { get; private set; }
-
-        public string ToJsonObject()
-        {
-            return JsonConvert.SerializeObject(this);
-        }
+        public string Channel { get; private set; }
     }
 }
