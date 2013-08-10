@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.WebSocket4NetSslExt.Socket;
+using WebSocket4Net;
 
 #endregion
 
@@ -13,6 +14,7 @@ namespace Bsw.FayeDotNet.Client
 {
     internal class FayeConnection : IFayeConnection
     {
+        internal const string ALREADY_DISCONNECTED = "Already disconnected";
         private readonly IWebSocket _socket;
         private readonly HandshakeResponseMessage _handshakeResponse;
 
@@ -28,6 +30,10 @@ namespace Bsw.FayeDotNet.Client
 
         public async Task Disconnect()
         {
+            if (_socket.State == WebSocketState.Closed)
+            {
+                throw new FayeConnectionException(ALREADY_DISCONNECTED);
+            }
             var tcs = new TaskCompletionSource<bool>();
             EventHandler closed = (sender,
                                    args) => tcs.SetResult(true);
