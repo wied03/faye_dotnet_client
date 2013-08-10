@@ -25,6 +25,7 @@ namespace Bsw.FayeDotNet.Client
     public class FayeClient : IFayeClient
     {
         private const string ONLY_SUPPORTED_CONNECTION_TYPE = "websocket";
+        internal const string SUCCESSFUL_FALSE = "Received a succcessful false message from server";
         private readonly IWebSocket _socket;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly FayeJsonConverter _converter;
@@ -55,8 +56,7 @@ namespace Bsw.FayeDotNet.Client
                 return new FayeConnection(_socket,
                                           result);
             }
-            // TODO: Deal with unsuccessful handshake
-            throw new NotImplementedException();
+            throw new HandshakeException(SUCCESSFUL_FALSE);
         }
 
         private async Task<T> ExecuteControlMessage<T>(BaseFayeMessage message) where T : BaseFayeMessage
