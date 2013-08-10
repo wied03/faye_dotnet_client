@@ -1,8 +1,5 @@
 ﻿#region
 
-using System;
-using System.Linq;
-using System.Linq.Expressions;
 using Bsw.FayeDotNet.Messages;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -10,7 +7,7 @@ using Newtonsoft.Json.Serialization;
 
 #endregion
 
-namespace Bsw.FayeDotNet.Client
+namespace Bsw.FayeDotNet.Serialization
 {
     internal class FayeJsonConverter
     {
@@ -22,8 +19,7 @@ namespace Bsw.FayeDotNet.Client
 
         public T Deserialize<T>(string message) where T : BaseFayeMessage
         {
-            var array = JsonConvert.DeserializeObject<JArray>(message,
-                                                              Settings);
+            var array = JsonConvert.DeserializeObject<JArray>(message);
             return array[0].ToObject<T>();
         }
 

@@ -13,8 +13,8 @@ namespace Bsw.FayeDotNet.Messages
     {
         internal const string HANDSHAKE_MESSAGE = "/meta/handshake";
         internal const string BAYEUX_VERSION_1 = "1.0";
-        public string Version { get; private set; }
-        public List<string> SupportedConnectionTypes { get; private set; }
+        public string Version { get; set; }
+        public List<string> SupportedConnectionTypes { get; set; }
 
         // for JSON deserializer
         public HandshakeRequestMessage() : base(HANDSHAKE_MESSAGE) { }

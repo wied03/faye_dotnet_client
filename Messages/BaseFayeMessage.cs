@@ -11,11 +11,11 @@ namespace Bsw.FayeDotNet.Messages
 {
     internal abstract class BaseFayeMessage
     {
-        protected BaseFayeMessage(string theChannel)
+        protected BaseFayeMessage(string channel)
         {
-            Channel = theChannel;
+            Channel = channel;
         }
 
-        public string Channel { get; private set; }
+        public string Channel { get; set; }
     }
 }

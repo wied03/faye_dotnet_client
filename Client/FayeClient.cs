@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
+using Bsw.FayeDotNet.Serialization;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
 using Newtonsoft.Json;
