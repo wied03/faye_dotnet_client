@@ -37,6 +37,10 @@
     <Reference Include="MsbwTest">
       <HintPath>..\..\..\nuget_pkg_lnk\MsbwTest.1.0.15.0\lib\net45\MsbwTest.dll</HintPath>
     </Reference>
+    <Reference Include="MsBwUtility, Version=1.0.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\nuget_pkg_lnk\MsbwUtility.1.0.15.0\lib\net45\MsBwUtility.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\..\nuget_pkg_lnk\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
