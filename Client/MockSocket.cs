@@ -26,7 +26,10 @@ namespace Bsw.FayeDotNet.Test.Client
 
         public void Send(string message)
         {
-            MessageSentAction(message);
+            if (MessageSentAction != null)
+            {
+                MessageSentAction(message);
+            }
             if (MessageReceiveAction != null)
             {
                 Task.Factory.StartNew(() => MessageReceived(this,

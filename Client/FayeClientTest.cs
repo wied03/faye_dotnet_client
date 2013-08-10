@@ -91,7 +91,7 @@ namespace Bsw.FayeDotNet.Test.Client
                     version = HandshakeRequestMessage.BAYEUX_VERSION_1,
                     successful
                 };
-            return JsonConvert.SerializeObject(response);
+            return JsonConvert.SerializeObject(new[] {response});
         }
 
         #endregion
@@ -140,7 +140,7 @@ namespace Bsw.FayeDotNet.Test.Client
                                           .ShouldThrow<HandshakeException>();
             result.Message
                   .Should()
-                  .Be("Handshaking with server failed.  Response from server was: foobar");
+                  .Be("Handshaking with server failed.  Response from server was: " + FayeClient.SUCCESSFUL_FALSE);
         }
 
         [Test]
