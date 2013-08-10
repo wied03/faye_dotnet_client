@@ -10,6 +10,7 @@ using Bsw.FayeDotNet.Client;
 using Bsw.RubyExecution;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
+using MsBw.MsBwUtility.Tasks;
 using MsbwTest;
 using NUnit.Framework;
 
@@ -124,29 +125,45 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public async Task Subscribe()
+        public async Task Subscribe_and_publish()
         {
             // arrange
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: "ws://localhost:8132/bayeux");
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            var secondClient = new FayeClient(new WebSocketClient(uri: "ws://localhost:8132/bayeux"));
+            var secondConnection = await secondClient.Connect();
+            var tcs = new TaskCompletionSource<dynamic>();
 
             // act
-
-            // assert
-            Assert.Fail("write test");
+            try
+            {
+                await _connection.Subscribe("/somechannel",
+                                            tcs.SetResult);
+                var messageToSend = new {stuff = "the message"};
+                await secondConnection.Publish("/somechannel",
+                                               messageToSend);
+                // assert
+                var task = tcs.Task;
+                var result = await task.Timeout(5.Seconds());
+                if (result == Result.Timeout)
+                {
+                    Assert.Fail("Timed out waiting for pub/sub to work");
+                }
+                var messageReceived = task.Result;
+                AssertionExtensions.ShouldBeEquivalentTo(messageReceived,
+                                                         messageToSend);
+            }
+            finally
+            {
+                secondConnection.Disconnect().Wait();
+            }
         }
 
         [Test]
         public async Task Unsubscribe()
-        {
-            // arrange
-
-            // act
-
-            // assert
-            Assert.Fail("write test");
-        }
-
-        [Test]
-        public async Task Publish()
         {
             // arrange
 
