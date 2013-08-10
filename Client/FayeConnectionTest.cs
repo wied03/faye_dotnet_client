@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Bsw.FayeDotNet.Client;
 using Bsw.RubyExecution;
 using Bsw.WebSocket4NetSslExt.Socket;
+using FluentAssertions;
 using MsbwTest;
 using NUnit.Framework;
 
@@ -86,7 +87,8 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Disconnect()
         {
             // arrange
-            var socket = new WebSocketClient(uri: "ws://localhost:8132");
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: "ws://localhost:8132/bayeux");
             SetupWebSocket(socket);
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
@@ -95,8 +97,19 @@ namespace Bsw.FayeDotNet.Test.Client
             await _connection.Disconnect();
 
             // assert
-            await _connection.InvokingAsync(c => c.Disconnect())
-                             .ShouldThrow<FayeConnectionException>();
+            try
+            {
+                var ex = await _connection.InvokingAsync(c => c.Disconnect())
+                                          .ShouldThrow<FayeConnectionException>();
+                ex.Message
+                  .Should()
+                  .Be(FayeConnection.ALREADY_DISCONNECTED);
+            }
+            finally
+            {
+                // teardown will break if we try and disconnect again
+                _connection = null;
+            }
         }
 
         [Test]
