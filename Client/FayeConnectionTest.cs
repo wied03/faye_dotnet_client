@@ -166,11 +166,33 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Unsubscribe()
         {
             // arrange
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: "ws://localhost:8132/bayeux");
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            var secondClient = new FayeClient(new WebSocketClient(uri: "ws://localhost:8132/bayeux"));
+            var secondConnection = await secondClient.Connect();
+            try
+            {
+                var tcs = new TaskCompletionSource<object>();
 
-            // act
+                await _connection.Subscribe("/somechannel",
+                                            tcs.SetResult);
 
-            // assert
-            Assert.Fail("write test");
+                // act
+                await _connection.Unsubscribe("/somechannel");
+
+                // assert
+                await secondConnection.Publish("/somechannel",
+                                               "foobar");
+                await Task.Delay(100.Milliseconds());
+                tcs.Should().BeNull();
+            }
+            finally
+            {
+                secondConnection.Disconnect().Wait();
+            }
         }
 
         #endregion
