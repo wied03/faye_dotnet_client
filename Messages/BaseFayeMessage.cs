@@ -3,17 +3,18 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using MsBw.MsBwUtility.Enum;
 using Newtonsoft.Json;
 
 #endregion
 
 namespace Bsw.FayeDotNet.Messages
 {
-    internal abstract class BaseFayeMessage
+    public abstract class BaseFayeMessage
     {
-        protected BaseFayeMessage(string channel)
+        protected BaseFayeMessage(MetaChannels channel)
         {
-            Channel = channel;
+            Channel = channel.StringValue();
         }
 
         public string Channel { get; set; }

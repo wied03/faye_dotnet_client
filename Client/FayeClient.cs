@@ -5,12 +5,10 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
-using Bsw.FayeDotNet.Serialization;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
 using NLog;
-using WebSocket4Net;
-using ErrorEventArgs = SuperSocket.ClientEngine.ErrorEventArgs;
+using SuperSocket.ClientEngine;
 
 #endregion
 
@@ -19,21 +17,20 @@ namespace Bsw.FayeDotNet.Client
     /// <summary>
     ///     Implementation with 10 second default timeout
     /// </summary>
-    public class FayeClient : IFayeClient
+    public class FayeClient : FayeClientBase,
+                              IFayeClient
     {
         private const string ONLY_SUPPORTED_CONNECTION_TYPE = "websocket";
         internal const string SUCCESSFUL_FALSE = "Received a succcessful false message from server";
         private readonly IWebSocket _socket;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private readonly FayeJsonConverter _converter;
 
-        public FayeClient(IWebSocket socket)
+        public FayeClient(IWebSocket socket) : base(socket)
         {
             _socket = socket;
             HandshakeTimeout = new TimeSpan(0,
                                             0,
                                             10);
-            _converter = new FayeJsonConverter();
         }
 
         public TimeSpan HandshakeTimeout { get; set; }
@@ -63,24 +60,6 @@ namespace Bsw.FayeDotNet.Client
                                           result);
             }
             throw new HandshakeException(SUCCESSFUL_FALSE);
-        }
-
-        private async Task<T> ExecuteControlMessage<T>(BaseFayeMessage message,TimeSpan timeoutValue) where T : BaseFayeMessage
-        {
-            var json = _converter.Serialize(message);
-            var tcs = new TaskCompletionSource<MessageReceivedEventArgs>();
-            EventHandler<MessageReceivedEventArgs> received = (sender,
-                                                               args) => tcs.SetResult(args);
-            _socket.MessageReceived += received;
-            _socket.Send(json);
-            var task = tcs.Task;
-            var result = await task.Timeout(timeoutValue);
-            if (result == Result.Timeout)
-            {
-                throw new TimeoutException();
-            }
-            _socket.MessageReceived -= received;
-            return _converter.Deserialize<T>(task.Result.Message);
         }
 
         private async Task OpenWebSocket()

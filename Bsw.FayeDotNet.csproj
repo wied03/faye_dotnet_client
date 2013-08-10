@@ -53,6 +53,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Client\FayeClientBase.cs" />
     <Compile Include="Client\FayeConnectionException.cs" />
     <Compile Include="Client\FayeClient.cs" />
     <Compile Include="Client\FayeConnection.cs" />
@@ -63,6 +64,9 @@
     <Compile Include="Client\IFayeClient.cs" />
     <Compile Include="Messages\HandshakeRequestMessage.cs" />
     <Compile Include="Messages\HandshakeResponseMessage.cs" />
+    <Compile Include="Messages\MetaChannels.cs" />
+    <Compile Include="Messages\SubscriptionRequestMessage.cs" />
+    <Compile Include="Messages\SubscriptionResponseMessage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialization\FayeJsonConverter.cs" />
   </ItemGroup>

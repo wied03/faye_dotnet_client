@@ -12,14 +12,15 @@ using WebSocket4Net;
 
 namespace Bsw.FayeDotNet.Client
 {
-    internal class FayeConnection : IFayeConnection
+    internal class FayeConnection : FayeClientBase,
+                                    IFayeConnection
     {
         internal const string ALREADY_DISCONNECTED = "Already disconnected";
         private readonly IWebSocket _socket;
         private readonly HandshakeResponseMessage _handshakeResponse;
 
         public FayeConnection(IWebSocket socket,
-                              HandshakeResponseMessage handshakeResponse)
+                              HandshakeResponseMessage handshakeResponse) : base(socket)
         {
             _handshakeResponse = handshakeResponse;
             _socket = socket;
@@ -42,9 +43,28 @@ namespace Bsw.FayeDotNet.Client
             await tcs.Task;
         }
 
-        public Task Subscribe(string channel,
+        public async Task Subscribe(string channel,
                               Action<object> messageReceived)
         {
+            var message = new SubscriptionRequestMessage(ClientId,
+                                                            channel);
+            SubscriptionResponseMessage result;
+            try
+            {
+                // TODO: Fix the timeout value
+                result = await ExecuteControlMessage<SubscriptionResponseMessage>(message,
+                                                                                  new TimeSpan(0,
+                                                                                               0,
+                                                                                               10));
+            }
+            catch (TimeoutException)
+            {
+                throw new NotImplementedException();
+            }
+            if (result.Successful)
+            {
+                return;
+            }
             throw new NotImplementedException();
         }
 

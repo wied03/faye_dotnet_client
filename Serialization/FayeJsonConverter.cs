@@ -9,7 +9,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace Bsw.FayeDotNet.Serialization
 {
-    internal class FayeJsonConverter
+    public class FayeJsonConverter
     {
         private static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
                                                                   {
