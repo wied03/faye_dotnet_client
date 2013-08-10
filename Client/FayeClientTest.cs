@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Client;
@@ -107,10 +108,10 @@ namespace Bsw.FayeDotNet.Test.Client
 
             // act + assert
             var result = await _fayeClient.InvokingAsync(t => t.Connect())
-                                          .ShouldThrow<Exception>();
+                                          .ShouldThrow<SocketException>();
             result.Message
                   .Should()
-                  .Be("Websocket couldn't connect, TBD");
+                  .Be("No such host is known");
         }
 
         [Test]
