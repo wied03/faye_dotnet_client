@@ -1,7 +1,6 @@
 ﻿#region
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -27,7 +26,6 @@ namespace Bsw.FayeDotNet.Test.Client
         #region Test Fields
 
         private IWebSocket _websocket;
-        private List<string> _messagesSent;
         private IFayeClient _fayeClient;
         private IFayeConnection _connection;
         private RubyProcess _fayeServerProcess;
@@ -47,7 +45,6 @@ namespace Bsw.FayeDotNet.Test.Client
         public override void SetUp()
         {
             base.SetUp();
-            _messagesSent = new List<string>();
             _fayeClient = null;
             _websocket = null;
             _connection = null;
@@ -127,7 +124,7 @@ namespace Bsw.FayeDotNet.Test.Client
             Assert.Fail("write test");
         }
 
-        public class TestMsg
+        private class TestMsg
         {
             public string Stuff { get; set; }
         }
@@ -152,8 +149,8 @@ namespace Bsw.FayeDotNet.Test.Client
                                             tcs.SetResult);
                 var messageToSend = new TestMsg {Stuff = "the message"};
                 var json = JsonConvert.SerializeObject(messageToSend);
-                secondConnection.Publish(channel: "/somechannel",
-                                         message: json);
+                await secondConnection.Publish(channel: "/somechannel",
+                                               message: json);
                 // assert
                 var task = tcs.Task;
                 var result = await task.Timeout(5.Seconds());
@@ -191,8 +188,8 @@ namespace Bsw.FayeDotNet.Test.Client
                                             tcs.SetResult);
                 var messageToSend = new TestMsg { Stuff = "the message" };
                 var json = JsonConvert.SerializeObject(messageToSend);
-                secondConnection.Publish(channel: "/somechannel",
-                                         message: json);
+                await secondConnection.Publish(channel: "/somechannel",
+                                               message: json);
                 // assert
                 var task = tcs.Task;
                 var result = await task.Timeout(5.Seconds());
@@ -286,8 +283,8 @@ namespace Bsw.FayeDotNet.Test.Client
                 await _connection.Unsubscribe("/somechannel");
 
                 // assert
-                secondConnection.Publish("/somechannel",
-                                         "foobar");
+                await secondConnection.Publish("/somechannel",
+                                               "foobar");
                 await Task.Delay(100.Milliseconds());
                 tcs.Should().BeNull();
             }
