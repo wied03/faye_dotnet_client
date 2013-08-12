@@ -18,7 +18,7 @@ namespace Bsw.FayeDotNet.Client
     {
         internal const string ALREADY_DISCONNECTED = "Already disconnected";
         private readonly IWebSocket _socket;
-        private readonly Dictionary<string, List<Action<object>>> _subscribedChannels;
+        private readonly Dictionary<string, List<Action<string>>> _subscribedChannels;
 
         private static readonly TimeSpan StandardCommandTimeout = new TimeSpan(0,
                                                                                0,
@@ -32,7 +32,7 @@ namespace Bsw.FayeDotNet.Client
             _socket = socket;
             ClientId = handshakeResponse.ClientId;
             _socket.MessageReceived += SocketMessageReceived;
-            _subscribedChannels = new Dictionary<string, List<Action<object>>>();
+            _subscribedChannels = new Dictionary<string, List<Action<string>>>();
         }
 
         private void SocketMessageReceived(object sender,
@@ -42,7 +42,7 @@ namespace Bsw.FayeDotNet.Client
             var channel = message.Channel;
             if (_subscribedChannels.ContainsKey(channel))
             {
-                _subscribedChannels[channel].ForEach(handler => handler(message.Data));
+                _subscribedChannels[channel].ForEach(handler => handler(message.Data.ToString()));
             }
         }
 
@@ -79,7 +79,7 @@ namespace Bsw.FayeDotNet.Client
         }
 
         public async Task Subscribe(string channel,
-                                    Action<object> messageReceived)
+                                    Action<string> messageReceived)
         {
             var message = new SubscriptionRequestMessage(ClientId,
                                                          channel);
@@ -96,7 +96,7 @@ namespace Bsw.FayeDotNet.Client
             if (!result.Successful) throw new NotImplementedException();
             var handlers = _subscribedChannels.ContainsKey(channel)
                                ? _subscribedChannels[channel]
-                               : new List<Action<object>>();
+                               : new List<Action<string>>();
             if (!handlers.Contains(messageReceived))
             {
                 handlers.Add(messageReceived);
@@ -110,7 +110,7 @@ namespace Bsw.FayeDotNet.Client
         }
 
         public void Publish(string channel,
-                            object message)
+                            string message)
         {
             var msg = new DataMessage(channel: channel,
                                       clientId: ClientId,

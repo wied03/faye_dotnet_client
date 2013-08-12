@@ -13,11 +13,11 @@ namespace Bsw.FayeDotNet.Client
         Task Disconnect();
 
         Task Subscribe(string channel,
-                       Action<object> messageReceived);
+                       Action<string> messageReceived);
 
         Task Unsubscribe(string channel);
 
         void Publish(string channel,
-                     object message);
+                     string message);
     }
 }
