@@ -17,12 +17,16 @@ namespace Bsw.FayeDotNet.Client
     {
         internal const string ALREADY_DISCONNECTED = "Already disconnected";
         private readonly IWebSocket _socket;
-        private readonly HandshakeResponseMessage _handshakeResponse;
+
+        private static readonly TimeSpan StandardCommandTimeout = new TimeSpan(0,
+                                                                               0,
+                                                                               10);
+
+        public string ClientId { get; private set; }
 
         public FayeConnection(IWebSocket socket,
                               HandshakeResponseMessage handshakeResponse) : base(socket)
         {
-            _handshakeResponse = handshakeResponse;
             _socket = socket;
             ClientId = handshakeResponse.ClientId;
             _socket.MessageReceived += _socket_MessageReceived;
@@ -34,15 +38,29 @@ namespace Bsw.FayeDotNet.Client
             var foo = "hi";
         }
 
-        public string ClientId { get; private set; }
-
         public async Task Disconnect()
         {
-            _socket.MessageReceived -= _socket_MessageReceived;
             if (_socket.State == WebSocketState.Closed)
             {
                 throw new FayeConnectionException(ALREADY_DISCONNECTED);
             }
+            _socket.MessageReceived -= _socket_MessageReceived;
+            DisconnectResponseMessage disconResult;
+            try
+            {
+                var disconnectMessage = new DisconnectRequestMessage(ClientId);
+                disconResult = await ExecuteControlMessage<DisconnectResponseMessage>(message: disconnectMessage,
+                                                                                       timeoutValue: StandardCommandTimeout);
+            }
+            catch (TimeoutException)
+            {
+                throw new NotImplementedException();
+            }
+            if (!disconResult.Successful)
+            {
+                throw new NotImplementedException();
+            }
+
             var tcs = new TaskCompletionSource<bool>();
             EventHandler closed = (sender,
                                    args) => tcs.SetResult(true);
@@ -59,11 +77,8 @@ namespace Bsw.FayeDotNet.Client
             SubscriptionResponseMessage result;
             try
             {
-                // TODO: Fix the timeout value
                 result = await ExecuteControlMessage<SubscriptionResponseMessage>(message,
-                                                                                  new TimeSpan(0,
-                                                                                               0,
-                                                                                               10));
+                                                                                  StandardCommandTimeout);
             }
             catch (TimeoutException)
             {

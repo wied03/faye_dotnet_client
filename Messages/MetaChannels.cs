@@ -1,4 +1,5 @@
-﻿using MsBw.MsBwUtility.Enum;
+﻿using System;
+using MsBw.MsBwUtility.Enum;
 
 namespace Bsw.FayeDotNet.Messages
 {
@@ -7,6 +8,8 @@ namespace Bsw.FayeDotNet.Messages
         [StringValue("/meta/subscribe")]
         Subscribe,
         [StringValue("/meta/handshake")]
-        Handshake
+        Handshake,
+        [StringValue("/meta/disconnect")]
+        Disconnect
     }
 }
