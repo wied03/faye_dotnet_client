@@ -19,6 +19,9 @@ namespace Bsw.FayeDotNet.Client
                                     IFayeConnection
     {
         internal const string ALREADY_DISCONNECTED = "Already disconnected";
+        internal const string WILDCARD_CHANNEL_ERROR_FORMAT =
+            "Wildcard channels (you tried to subscribe to {0}) are not currently supported with this client";
+
         private readonly IWebSocket _socket;
         private readonly Dictionary<string, List<Action<string>>> _subscribedChannels;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -88,6 +91,11 @@ namespace Bsw.FayeDotNet.Client
         public async Task Subscribe(string channel,
                                     Action<string> messageReceived)
         {
+            if (channel.Contains("*"))
+            {
+                throw new SubscriptionException(string.Format(WILDCARD_CHANNEL_ERROR_FORMAT,
+                                                              channel));
+            }
             Logger.Debug("Subscribing to channel '{0}'",
                          channel);
             var message = new SubscriptionRequestMessage(ClientId,
