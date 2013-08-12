@@ -12,6 +12,7 @@ using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
 using MsBw.MsBwUtility.Tasks;
 using MsbwTest;
+using Newtonsoft.Json;
 using NUnit.Framework;
 
 #endregion
@@ -124,6 +125,11 @@ namespace Bsw.FayeDotNet.Test.Client
             Assert.Fail("write test");
         }
 
+        public class TestMsg
+        {
+            public string Stuff { get; set; }
+        }
+
         [Test]
         public async Task Subscribe_and_publish()
         {
@@ -135,16 +141,17 @@ namespace Bsw.FayeDotNet.Test.Client
             _connection = await _fayeClient.Connect();
             var secondClient = new FayeClient(new WebSocketClient(uri: "ws://localhost:8132/bayeux"));
             var secondConnection = await secondClient.Connect();
-            var tcs = new TaskCompletionSource<dynamic>();
+            var tcs = new TaskCompletionSource<string>();
 
             // act
             try
             {
                 await _connection.Subscribe("/somechannel",
                                             tcs.SetResult);
-                var messageToSend = new {stuff = "the message"};
-                secondConnection.Publish("/somechannel",
-                                         messageToSend);
+                var messageToSend = new TestMsg {Stuff = "the message"};
+                var json = JsonConvert.SerializeObject(messageToSend);
+                secondConnection.Publish(channel: "/somechannel",
+                                         message: json);
                 // assert
                 var task = tcs.Task;
                 var result = await task.Timeout(5.Seconds());
@@ -152,9 +159,10 @@ namespace Bsw.FayeDotNet.Test.Client
                 {
                     Assert.Fail("Timed out waiting for pub/sub to work");
                 }
-                var messageReceived = task.Result;
-                AssertionExtensions.ShouldBeEquivalentTo(messageReceived,
-                                                         messageToSend);
+                var jsonReceived = task.Result;
+                var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+                objectReceived
+                    .ShouldBeEquivalentTo(messageToSend);
             }
             finally
             {
