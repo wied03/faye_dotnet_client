@@ -171,6 +171,17 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
+        public async Task Subscribe_wildcard_channel()
+        {
+            // arrange
+
+            // act
+
+            // assert
+            Assert.Fail("write test");
+        }
+
+        [Test]
         public async Task Subscribe_reserved_channel_name()
         {
             // arrange
