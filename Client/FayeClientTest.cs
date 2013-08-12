@@ -24,6 +24,8 @@ namespace Bsw.FayeDotNet.Test.Client
     [TestFixture]
     public class FayeClientTest : BaseTest
     {
+        private const string TEST_SERVER_URL = "ws://localhost:8132/bayeux";
+
         #region Test Fields
 
         private IWebSocket _websocket;
@@ -179,7 +181,7 @@ namespace Bsw.FayeDotNet.Test.Client
         {
             // arrange
             _fayeServerProcess.StartThinServer();
-            var socket = new WebSocketClient(uri: "ws://localhost:8132/bayeux");
+            var socket = new WebSocketClient(uri: TEST_SERVER_URL);
             SetupWebSocket(socket);
             InstantiateFayeClient();
 
