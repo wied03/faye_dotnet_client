@@ -25,12 +25,20 @@ namespace Bsw.FayeDotNet.Client
             _handshakeResponse = handshakeResponse;
             _socket = socket;
             ClientId = handshakeResponse.ClientId;
+            _socket.MessageReceived += _socket_MessageReceived;
+        }
+
+        private void _socket_MessageReceived(object sender,
+                                             MessageReceivedEventArgs e)
+        {
+            var foo = "hi";
         }
 
         public string ClientId { get; private set; }
 
         public async Task Disconnect()
         {
+            _socket.MessageReceived -= _socket_MessageReceived;
             if (_socket.State == WebSocketState.Closed)
             {
                 throw new FayeConnectionException(ALREADY_DISCONNECTED);
@@ -44,10 +52,10 @@ namespace Bsw.FayeDotNet.Client
         }
 
         public async Task Subscribe(string channel,
-                              Action<object> messageReceived)
+                                    Action<object> messageReceived)
         {
             var message = new SubscriptionRequestMessage(ClientId,
-                                                            channel);
+                                                         channel);
             SubscriptionResponseMessage result;
             try
             {
@@ -73,10 +81,14 @@ namespace Bsw.FayeDotNet.Client
             throw new NotImplementedException();
         }
 
-        public Task Publish(string channel,
+        public void Publish(string channel,
                             object message)
         {
-            throw new NotImplementedException();
+            var msg = new DataMessageRequest(channel: channel,
+                                             clientId: ClientId,
+                                             data: message);
+            var json = Converter.Serialize(msg);
+            _socket.Send(json);
         }
     }
 }

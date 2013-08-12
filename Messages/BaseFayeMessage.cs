@@ -4,7 +4,6 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using MsBw.MsBwUtility.Enum;
-using Newtonsoft.Json;
 
 #endregion
 
@@ -13,8 +12,13 @@ namespace Bsw.FayeDotNet.Messages
     public abstract class BaseFayeMessage
     {
         protected BaseFayeMessage(MetaChannels channel)
+            : this(channel.StringValue())
         {
-            Channel = channel.StringValue();
+        }
+
+        protected BaseFayeMessage(string channel)
+        {
+            Channel = channel;
         }
 
         public string Channel { get; set; }

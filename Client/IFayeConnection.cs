@@ -17,7 +17,7 @@ namespace Bsw.FayeDotNet.Client
 
         Task Unsubscribe(string channel);
 
-        Task Publish(string channel,
+        void Publish(string channel,
                      object message);
     }
 }
