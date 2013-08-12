@@ -172,40 +172,24 @@ namespace Bsw.FayeDotNet.Test.Client
         [Test]
         public async Task Subscribe_wildcard_channel()
         {
+            // arrange
             _fayeServerProcess.StartThinServer();
             var socket = new WebSocketClient(uri: TEST_SERVER_URL);
             SetupWebSocket(socket);
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
-            var secondClient = new FayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
-            var secondConnection = await secondClient.Connect();
-            var tcs = new TaskCompletionSource<string>();
+            const string wildcardChannel = "/*";
+            Action<string> dummyAction = msg => Console.WriteLine("hi");
 
-            // act
-            try
-            {
-                await _connection.Subscribe("/*",
-                                            tcs.SetResult);
-                var messageToSend = new TestMsg { Stuff = "the message" };
-                var json = JsonConvert.SerializeObject(messageToSend);
-                await secondConnection.Publish(channel: "/somechannel",
-                                               message: json);
-                // assert
-                var task = tcs.Task;
-                var result = await task.Timeout(5.Seconds());
-                if (result == Result.Timeout)
-                {
-                    Assert.Fail("Timed out waiting for pub/sub to work");
-                }
-                var jsonReceived = task.Result;
-                var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
-                objectReceived
-                    .ShouldBeEquivalentTo(messageToSend);
-            }
-            finally
-            {
-                secondConnection.Disconnect().Wait();
-            }
+            // act + assert
+            var exception = await _connection.InvokingAsync(c => c.Subscribe(wildcardChannel,
+                                                                             dummyAction))
+                                             .ShouldThrow<SubscriptionException>();
+            var expectedMessage = string.Format(FayeConnection.WILDCARD_CHANNEL_ERROR_FORMAT,
+                                                wildcardChannel);
+            exception.Message
+                     .Should()
+                     .Be(expectedMessage);
         }
 
         [Test]
