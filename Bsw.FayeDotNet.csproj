@@ -59,6 +59,7 @@
     <Compile Include="Client\FayeConnection.cs" />
     <Compile Include="Client\HandshakeException.cs" />
     <Compile Include="Client\IFayeConnection.cs" />
+    <Compile Include="Client\PublishException.cs" />
     <Compile Include="Client\SubscriptionException.cs" />
     <Compile Include="Client\TimeoutException.cs" />
     <Compile Include="Messages\BaseFayeMessage.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="Messages\HandshakeRequestMessage.cs" />
     <Compile Include="Messages\HandshakeResponseMessage.cs" />
     <Compile Include="Messages\MetaChannels.cs" />
+    <Compile Include="Messages\PublishResponseMessage.cs" />
     <Compile Include="Messages\SubscriptionRequestMessage.cs" />
     <Compile Include="Messages\SubscriptionResponseMessage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

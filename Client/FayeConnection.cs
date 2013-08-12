@@ -112,7 +112,7 @@ namespace Bsw.FayeDotNet.Client
             }
             _subscribedChannels[channel] = handlers;
             Logger.Info("Successfully subscribed to channel '{0}'",
-                         channel);
+                        channel);
         }
 
         public Task Unsubscribe(string channel)
@@ -120,8 +120,8 @@ namespace Bsw.FayeDotNet.Client
             throw new NotImplementedException();
         }
 
-        public void Publish(string channel,
-                            string message)
+        public async Task Publish(string channel,
+                                  string message)
         {
             Logger.Debug("Publishing to channel '{0}' message '{1}'",
                          channel,
@@ -129,8 +129,12 @@ namespace Bsw.FayeDotNet.Client
             var msg = new DataMessage(channel: channel,
                                       clientId: ClientId,
                                       data: message);
-            var json = Converter.Serialize(msg);
-            _socket.Send(json);
+            var result = await ExecuteControlMessage<PublishResponseMessage>(message: msg,
+                                                                             timeoutValue: StandardCommandTimeout);
+            if (!result.Successful)
+            {
+                throw new PublishException(result.Error);
+            }
         }
     }
 }
