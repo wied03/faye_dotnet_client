@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ namespace Bsw.FayeDotNet.Client
     {
         internal const string ALREADY_DISCONNECTED = "Already disconnected";
         private readonly IWebSocket _socket;
+        private readonly Dictionary<string, List<Action<object>>> _subscribedChannels;
 
         private static readonly TimeSpan StandardCommandTimeout = new TimeSpan(0,
                                                                                0,
@@ -29,13 +31,19 @@ namespace Bsw.FayeDotNet.Client
         {
             _socket = socket;
             ClientId = handshakeResponse.ClientId;
-            _socket.MessageReceived += _socket_MessageReceived;
+            _socket.MessageReceived += SocketMessageReceived;
+            _subscribedChannels = new Dictionary<string, List<Action<object>>>();
         }
 
-        private void _socket_MessageReceived(object sender,
-                                             MessageReceivedEventArgs e)
+        private void SocketMessageReceived(object sender,
+                                           MessageReceivedEventArgs e)
         {
-            var foo = "hi";
+            var message = Converter.Deserialize<DataMessage>(e.Message);
+            var channel = message.Channel;
+            if (_subscribedChannels.ContainsKey(channel))
+            {
+                _subscribedChannels[channel].ForEach(handler => handler(message.Data));
+            }
         }
 
         public async Task Disconnect()
@@ -44,13 +52,14 @@ namespace Bsw.FayeDotNet.Client
             {
                 throw new FayeConnectionException(ALREADY_DISCONNECTED);
             }
-            _socket.MessageReceived -= _socket_MessageReceived;
+            _socket.MessageReceived -= SocketMessageReceived;
             DisconnectResponseMessage disconResult;
             try
             {
                 var disconnectMessage = new DisconnectRequestMessage(ClientId);
                 disconResult = await ExecuteControlMessage<DisconnectResponseMessage>(message: disconnectMessage,
-                                                                                       timeoutValue: StandardCommandTimeout);
+                                                                                      timeoutValue:
+                                                                                          StandardCommandTimeout);
             }
             catch (TimeoutException)
             {
@@ -77,18 +86,22 @@ namespace Bsw.FayeDotNet.Client
             SubscriptionResponseMessage result;
             try
             {
-                result = await ExecuteControlMessage<SubscriptionResponseMessage>(message,
-                                                                                  StandardCommandTimeout);
+                result = await ExecuteControlMessage<SubscriptionResponseMessage>(message: message,
+                                                                                  timeoutValue: StandardCommandTimeout);
             }
             catch (TimeoutException)
             {
                 throw new NotImplementedException();
             }
-            if (result.Successful)
+            if (!result.Successful) throw new NotImplementedException();
+            var handlers = _subscribedChannels.ContainsKey(channel)
+                               ? _subscribedChannels[channel]
+                               : new List<Action<object>>();
+            if (!handlers.Contains(messageReceived))
             {
-                return;
+                handlers.Add(messageReceived);
             }
-            throw new NotImplementedException();
+            _subscribedChannels[channel] = handlers;
         }
 
         public Task Unsubscribe(string channel)
@@ -99,9 +112,9 @@ namespace Bsw.FayeDotNet.Client
         public void Publish(string channel,
                             object message)
         {
-            var msg = new DataMessageRequest(channel: channel,
-                                             clientId: ClientId,
-                                             data: message);
+            var msg = new DataMessage(channel: channel,
+                                      clientId: ClientId,
+                                      data: message);
             var json = Converter.Serialize(msg);
             _socket.Send(json);
         }

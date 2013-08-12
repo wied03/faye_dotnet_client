@@ -21,6 +21,9 @@ namespace Bsw.FayeDotNet.Messages
             Channel = channel;
         }
 
+        // for JSON serializer
+        protected BaseFayeMessage() {}
+
         public string Channel { get; set; }
     }
 }

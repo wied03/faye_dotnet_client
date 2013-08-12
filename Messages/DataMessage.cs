@@ -8,14 +8,19 @@ using System.Linq.Expressions;
 
 namespace Bsw.FayeDotNet.Messages
 {
-    public class DataMessageRequest : BaseFayeMessage
+    public class DataMessage : BaseFayeMessage
     {
         public string ClientId { get; set; }
         public object Data { get; set; }
 
-        public DataMessageRequest(string channel,
-                                  string clientId,
-                                  object data) : base(channel)
+        // for JSON serializer
+        public DataMessage() : base()
+        {
+        }
+
+        public DataMessage(string channel,
+                           string clientId,
+                           object data) : base(channel)
         {
             ClientId = clientId;
             Data = data;
