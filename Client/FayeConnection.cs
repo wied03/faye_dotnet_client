@@ -2,11 +2,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.WebSocket4NetSslExt.Socket;
+using NLog;
 using WebSocket4Net;
 
 #endregion
@@ -19,6 +21,7 @@ namespace Bsw.FayeDotNet.Client
         internal const string ALREADY_DISCONNECTED = "Already disconnected";
         private readonly IWebSocket _socket;
         private readonly Dictionary<string, List<Action<string>>> _subscribedChannels;
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private static readonly TimeSpan StandardCommandTimeout = new TimeSpan(0,
                                                                                0,
@@ -40,10 +43,10 @@ namespace Bsw.FayeDotNet.Client
         {
             var message = Converter.Deserialize<DataMessage>(e.Message);
             var channel = message.Channel;
-            if (_subscribedChannels.ContainsKey(channel))
-            {
-                _subscribedChannels[channel].ForEach(handler => handler(message.Data.ToString()));
-            }
+            // could be another subscribe/publish message
+            if (!_subscribedChannels.ContainsKey(channel)) return;
+            var messageData = message.Data.ToString(CultureInfo.InvariantCulture);
+            _subscribedChannels[channel].ForEach(handler => handler(messageData));
         }
 
         public async Task Disconnect()
