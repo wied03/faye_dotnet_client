@@ -163,6 +163,28 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
+        public async Task Subscribe_reserved_channel_name()
+        {
+            // arrange
+
+            // act
+
+            // assert
+            Assert.Fail("write test");
+        }
+
+        [Test]
+        public async Task Unsubscribe_not_currently_subscribed()
+        {
+            // arrange
+
+            // act
+
+            // assert
+            Assert.Fail("write test");
+        }
+
+        [Test]
         public async Task Unsubscribe()
         {
             // arrange
