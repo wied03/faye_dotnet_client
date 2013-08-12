@@ -185,11 +185,21 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Subscribe_reserved_channel_name()
         {
             // arrange
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: "ws://localhost:8132/bayeux");
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            const string reservedChannelName = "/meta/subscribe";
+            Action<string> dummyAction = msg => Console.WriteLine("hi");
 
-            // act
-
-            // assert
-            Assert.Fail("write test");
+            // act + assert
+            var exception = await _connection.InvokingAsync(s => s.Subscribe(channel: reservedChannelName,
+                                                                             messageReceived: dummyAction))
+                                             .ShouldThrow<SubscriptionException>();
+            exception.Message
+                     .Should()
+                     .Be("403:/meta/subscribe:Forbidden channel");
         }
 
         [Test]

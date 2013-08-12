@@ -83,14 +83,15 @@ namespace Bsw.FayeDotNet.Test.Client
             _websocket = webSocket;
         }
 
-        private static string GetHandshakeResponse(bool successful = true)
+        private static string GetHandshakeResponse(bool successful = true, string error = null)
         {
             var response =
                 new
                 {
                     channel = HandshakeRequestMessage.HANDSHAKE_MESSAGE,
                     version = HandshakeRequestMessage.BAYEUX_VERSION_1,
-                    successful
+                    successful,
+                    error
                 };
             return JsonConvert.SerializeObject(new[] {response});
         }
@@ -129,7 +130,8 @@ namespace Bsw.FayeDotNet.Test.Client
                                  MessageReceiveAction = () =>
                                                         {
                                                             Thread.Sleep(100);
-                                                            return GetHandshakeResponse(successful: false);
+                                                            return GetHandshakeResponse(successful: false,
+                                                                                        error: "something failed");
                                                         }
                              };
             
@@ -141,7 +143,7 @@ namespace Bsw.FayeDotNet.Test.Client
                                           .ShouldThrow<HandshakeException>();
             result.Message
                   .Should()
-                  .Be("Handshaking with server failed.  Response from server was: " + FayeClient.SUCCESSFUL_FALSE);
+                  .Be("Handshaking with server failed.  Response from server was: something failed");
         }
 
         [Test]
