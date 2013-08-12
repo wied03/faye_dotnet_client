@@ -94,6 +94,9 @@
     <None Include="app.rb" />
     <None Include="config.ru" />
     <None Include="Gemfile" />
+    <None Include="NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
