@@ -46,6 +46,9 @@ namespace Bsw.FayeDotNet.Client
             // could be another subscribe/publish message
             if (!_subscribedChannels.ContainsKey(channel)) return;
             var messageData = message.Data.ToString(CultureInfo.InvariantCulture);
+            Logger.Debug("Message data received for channel '{0}' is '{1}",
+                         channel,
+                         messageData);
             _subscribedChannels[channel].ForEach(handler => handler(messageData));
         }
 
@@ -55,6 +58,7 @@ namespace Bsw.FayeDotNet.Client
             {
                 throw new FayeConnectionException(ALREADY_DISCONNECTED);
             }
+            Logger.Info("Disconnecting from FAYE server");
             _socket.MessageReceived -= SocketMessageReceived;
             DisconnectResponseMessage disconResult;
             try
@@ -84,6 +88,8 @@ namespace Bsw.FayeDotNet.Client
         public async Task Subscribe(string channel,
                                     Action<string> messageReceived)
         {
+            Logger.Debug("Subscribing to channel '{0}'",
+                         channel);
             var message = new SubscriptionRequestMessage(ClientId,
                                                          channel);
             SubscriptionResponseMessage result;
@@ -105,6 +111,8 @@ namespace Bsw.FayeDotNet.Client
                 handlers.Add(messageReceived);
             }
             _subscribedChannels[channel] = handlers;
+            Logger.Info("Successfully subscribed to channel '{0}'",
+                         channel);
         }
 
         public Task Unsubscribe(string channel)
@@ -115,6 +123,9 @@ namespace Bsw.FayeDotNet.Client
         public void Publish(string channel,
                             string message)
         {
+            Logger.Debug("Publishing to channel '{0}' message '{1}'",
+                         channel,
+                         message);
             var msg = new DataMessage(channel: channel,
                                       clientId: ClientId,
                                       data: message);
