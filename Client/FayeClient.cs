@@ -21,7 +21,6 @@ namespace Bsw.FayeDotNet.Client
                               IFayeClient
     {
         private const string ONLY_SUPPORTED_CONNECTION_TYPE = "websocket";
-        internal const string SUCCESSFUL_FALSE = "Received a succcessful false message from server";
         private readonly IWebSocket _socket;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -59,7 +58,7 @@ namespace Bsw.FayeDotNet.Client
                 return new FayeConnection(_socket,
                                           result);
             }
-            throw new HandshakeException(SUCCESSFUL_FALSE);
+            throw new HandshakeException(result.Error);
         }
 
         private async Task OpenWebSocket()

@@ -102,7 +102,7 @@ namespace Bsw.FayeDotNet.Client
             {
                 throw new NotImplementedException();
             }
-            if (!result.Successful) throw new NotImplementedException();
+            if (!result.Successful) throw new SubscriptionException(result.Error);
             var handlers = _subscribedChannels.ContainsKey(channel)
                                ? _subscribedChannels[channel]
                                : new List<Action<string>>();

@@ -59,6 +59,7 @@
     <Compile Include="Client\FayeConnection.cs" />
     <Compile Include="Client\HandshakeException.cs" />
     <Compile Include="Client\IFayeConnection.cs" />
+    <Compile Include="Client\SubscriptionException.cs" />
     <Compile Include="Client\TimeoutException.cs" />
     <Compile Include="Messages\BaseFayeMessage.cs" />
     <Compile Include="Client\IFayeClient.cs" />

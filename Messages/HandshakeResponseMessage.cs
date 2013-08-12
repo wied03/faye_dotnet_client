@@ -12,6 +12,7 @@ namespace Bsw.FayeDotNet.Messages
     internal class HandshakeResponseMessage : HandshakeRequestMessage
     {
         public bool Successful { get; set; }
+        public string Error { get; set; }
         public string ClientId { get; set; }
 
         // for JSON deserializer
