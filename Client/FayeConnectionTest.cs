@@ -143,8 +143,8 @@ namespace Bsw.FayeDotNet.Test.Client
                 await _connection.Subscribe("/somechannel",
                                             tcs.SetResult);
                 var messageToSend = new {stuff = "the message"};
-                await secondConnection.Publish("/somechannel",
-                                               messageToSend);
+                secondConnection.Publish("/somechannel",
+                                         messageToSend);
                 // assert
                 var task = tcs.Task;
                 var result = await task.Timeout(5.Seconds());
@@ -184,8 +184,8 @@ namespace Bsw.FayeDotNet.Test.Client
                 await _connection.Unsubscribe("/somechannel");
 
                 // assert
-                await secondConnection.Publish("/somechannel",
-                                               "foobar");
+                secondConnection.Publish("/somechannel",
+                                         "foobar");
                 await Task.Delay(100.Milliseconds());
                 tcs.Should().BeNull();
             }
