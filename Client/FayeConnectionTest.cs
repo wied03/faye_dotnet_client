@@ -141,15 +141,16 @@ namespace Bsw.FayeDotNet.Test.Client
             var secondClient = new FayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
             var secondConnection = await secondClient.Connect();
             var tcs = new TaskCompletionSource<string>();
+            const string channelName = "/somechannel";
+            var messageToSend = new TestMsg { Stuff = "the message" };
 
             // act
             try
             {
-                await _connection.Subscribe("/somechannel",
+                await _connection.Subscribe(channelName,
                                             tcs.SetResult);
-                var messageToSend = new TestMsg {Stuff = "the message"};
                 var json = JsonConvert.SerializeObject(messageToSend);
-                await secondConnection.Publish(channel: "/somechannel",
+                await secondConnection.Publish(channel: channelName,
                                                message: json);
                 // assert
                 var task = tcs.Task;
@@ -202,11 +203,12 @@ namespace Bsw.FayeDotNet.Test.Client
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
             const string invalidChannel = "/*";
-            const string throwawayMessage = "{\"foobar\":\"stuff\"}";
+            var messageToSendObj = new TestMsg { Stuff = "the message" };
+            var messageToSend = JsonConvert.SerializeObject(messageToSendObj);
 
             // act + assert
             var exception = await _connection.InvokingAsync(c => c.Publish(channel: invalidChannel,
-                                                                           message: throwawayMessage))
+                                                                           message: messageToSend))
                                              .ShouldThrow<PublishException>();
             exception.Message
                      .Should()
@@ -238,11 +240,41 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Unsubscribe_not_currently_subscribed()
         {
             // arrange
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: TEST_SERVER_URL);
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            const string channelWeDidntSubscribeTo = "/foobar";
 
-            // act
+            // act + assert
+            var exception = await _connection.InvokingAsync(c => c.Unsubscribe(channelWeDidntSubscribeTo))
+                                             .ShouldThrow<SubscriptionException>();
+            var expectedError = string.Format(FayeConnection.NOT_SUBSCRIBED,
+                                              channelWeDidntSubscribeTo);
+            exception.Message
+                     .Should()
+                     .Be(expectedError);
+        }
 
-            // assert
-            Assert.Fail("write test");
+        [Test]
+        public async Task Unsubscribe_wildcard()
+        {
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: TEST_SERVER_URL);
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            const string wildcardChannel = "/*";
+
+            // act + assert
+            var exception = await _connection.InvokingAsync(c => c.Unsubscribe(wildcardChannel))
+                                             .ShouldThrow<SubscriptionException>();
+            var expectedMessage = string.Format(FayeConnection.WILDCARD_CHANNEL_ERROR_FORMAT,
+                                                wildcardChannel);
+            exception.Message
+                     .Should()
+                     .Be(expectedMessage);
         }
 
         [Test]
@@ -256,21 +288,28 @@ namespace Bsw.FayeDotNet.Test.Client
             _connection = await _fayeClient.Connect();
             var secondClient = new FayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
             var secondConnection = await secondClient.Connect();
+            const string channelName = "/somechannel";
+            var tcs = new TaskCompletionSource<object>();
+            var messageToSendObj = new TestMsg { Stuff = "the message" };
+            var messageToSend = JsonConvert.SerializeObject(messageToSendObj);
+
             try
             {
-                var tcs = new TaskCompletionSource<object>();
-
-                await _connection.Subscribe("/somechannel",
-                                            tcs.SetResult);
+                await _connection.Subscribe(channelName,
+                                            tcs.SetResult); // should never hit this
 
                 // act
-                await _connection.Unsubscribe("/somechannel");
+                await _connection.Unsubscribe(channelName);
 
                 // assert
-                await secondConnection.Publish("/somechannel",
-                                               "foobar");
+                await secondConnection.Publish(channelName,
+                                               messageToSend);
                 await Task.Delay(100.Milliseconds());
-                tcs.Should().BeNull();
+                tcs.Task
+                   .Status
+                   .Should()
+                   .Be(TaskStatus.WaitingForActivation,
+                       "We should never fire our event since we unsubscribe before the 1st message");
             }
             finally
             {
