@@ -69,7 +69,7 @@ namespace Bsw.FayeDotNet.Client
             _socket.MessageReceived -= SocketMessageReceived;
 
             var disconnectMessage = new DisconnectRequestMessage(ClientId);
-            var disconResult = await ExecuteControlMessage<DisconnectResponseMessage>(message: disconnectMessage,
+            var disconResult = await ExecuteSynchronousMessage<DisconnectResponseMessage>(message: disconnectMessage,
                                                                                       timeoutValue:
                                                                                           StandardCommandTimeout);
             if (!disconResult.Successful)
@@ -106,7 +106,7 @@ namespace Bsw.FayeDotNet.Client
             var message = new SubscriptionRequestMessage(ClientId,
                                                          channel);
 
-            var result = await ExecuteControlMessage<SubscriptionResponseMessage>(message: message,
+            var result = await ExecuteSynchronousMessage<SubscriptionResponseMessage>(message: message,
                                                                                   timeoutValue: StandardCommandTimeout);
 
             if (!result.Successful) throw new SubscriptionException(result.Error);
@@ -148,7 +148,7 @@ namespace Bsw.FayeDotNet.Client
             var message = new UnsubscribeRequestMessage(ClientId,
                                                         channel);
 
-            var result = await ExecuteControlMessage<UnsubscribeResponseMessage>(message: message,
+            var result = await ExecuteSynchronousMessage<UnsubscribeResponseMessage>(message: message,
                                                                                  timeoutValue: StandardCommandTimeout);
 
             if (!result.Successful) throw new SubscriptionException(result.Error);
@@ -164,7 +164,7 @@ namespace Bsw.FayeDotNet.Client
             var msg = new DataMessage(channel: channel,
                                       clientId: ClientId,
                                       data: message);
-            var result = await ExecuteControlMessage<PublishResponseMessage>(message: msg,
+            var result = await ExecuteSynchronousMessage<PublishResponseMessage>(message: msg,
                                                                              timeoutValue: StandardCommandTimeout);
             if (!result.Successful)
             {

@@ -24,8 +24,8 @@ namespace Bsw.FayeDotNet.Client
             Converter = new FayeJsonConverter();
         }
 
-        protected async Task<T> ExecuteControlMessage<T>(BaseFayeMessage message,
-                                                         TimeSpan timeoutValue) where T : BaseFayeMessage
+        protected async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
+                                                             TimeSpan timeoutValue) where T : BaseFayeMessage
         {
             var json = Converter.Serialize(message);
             var tcs = new TaskCompletionSource<MessageReceivedEventArgs>();

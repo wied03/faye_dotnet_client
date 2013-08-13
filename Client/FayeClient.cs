@@ -51,7 +51,7 @@ namespace Bsw.FayeDotNet.Client
             HandshakeResponseMessage result;
             try
             {
-                result = await ExecuteControlMessage<HandshakeResponseMessage>(message,
+                result = await ExecuteSynchronousMessage<HandshakeResponseMessage>(message,
                                                                                HandshakeTimeout);
             }
             catch (TimeoutException)
