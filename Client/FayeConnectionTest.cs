@@ -116,6 +116,8 @@ namespace Bsw.FayeDotNet.Test.Client
         [Test]
         public async Task Connect_lost_connection_retry_happens_properly()
         {
+            // TODO: Setup socat between the thin server and the .NET client, then break the connection
+            // TODO: Figure out when the FAYE client issues the connect command and how it determines when the transport goes down
             // arrange
 
             // act
