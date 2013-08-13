@@ -19,8 +19,10 @@ namespace Bsw.FayeDotNet.Client
                                     IFayeConnection
     {
         internal const string ALREADY_DISCONNECTED = "Already disconnected";
+
         internal const string WILDCARD_CHANNEL_ERROR_FORMAT =
             "Wildcard channels (you tried to subscribe/unsubscribe from {0}) are not currently supported with this client";
+
         internal const string NOT_SUBSCRIBED =
             "You cannot unsubscribe from channel '{0}' because you were not subscribed to it first";
 
@@ -65,18 +67,11 @@ namespace Bsw.FayeDotNet.Client
             }
             Logger.Info("Disconnecting from FAYE server");
             _socket.MessageReceived -= SocketMessageReceived;
-            DisconnectResponseMessage disconResult;
-            try
-            {
-                var disconnectMessage = new DisconnectRequestMessage(ClientId);
-                disconResult = await ExecuteControlMessage<DisconnectResponseMessage>(message: disconnectMessage,
+
+            var disconnectMessage = new DisconnectRequestMessage(ClientId);
+            var disconResult = await ExecuteControlMessage<DisconnectResponseMessage>(message: disconnectMessage,
                                                                                       timeoutValue:
                                                                                           StandardCommandTimeout);
-            }
-            catch (TimeoutException)
-            {
-                throw new NotImplementedException();
-            }
             if (!disconResult.Successful)
             {
                 throw new NotImplementedException();
@@ -98,21 +93,32 @@ namespace Bsw.FayeDotNet.Client
                 throw new SubscriptionException(string.Format(WILDCARD_CHANNEL_ERROR_FORMAT,
                                                               channel));
             }
+            if (_subscribedChannels.ContainsKey(channel))
+            {
+                Logger.Debug("Adding additional event for channel '{0}'",
+                             channel);
+                AddLocalChannelHandler(channel,
+                                       messageReceived);
+                return;
+            }
             Logger.Debug("Subscribing to channel '{0}'",
                          channel);
             var message = new SubscriptionRequestMessage(ClientId,
                                                          channel);
-            SubscriptionResponseMessage result;
-            try
-            {
-                result = await ExecuteControlMessage<SubscriptionResponseMessage>(message: message,
+
+            var result = await ExecuteControlMessage<SubscriptionResponseMessage>(message: message,
                                                                                   timeoutValue: StandardCommandTimeout);
-            }
-            catch (TimeoutException)
-            {
-                throw new NotImplementedException();
-            }
+
             if (!result.Successful) throw new SubscriptionException(result.Error);
+            AddLocalChannelHandler(channel,
+                                   messageReceived);
+            Logger.Info("Successfully subscribed to channel '{0}'",
+                        channel);
+        }
+
+        private void AddLocalChannelHandler(string channel,
+                                            Action<string> messageReceived)
+        {
             var handlers = _subscribedChannels.ContainsKey(channel)
                                ? _subscribedChannels[channel]
                                : new List<Action<string>>();
@@ -121,8 +127,6 @@ namespace Bsw.FayeDotNet.Client
                 handlers.Add(messageReceived);
             }
             _subscribedChannels[channel] = handlers;
-            Logger.Info("Successfully subscribed to channel '{0}'",
-                        channel);
         }
 
         public async Task Unsubscribe(string channel)
@@ -143,16 +147,10 @@ namespace Bsw.FayeDotNet.Client
                          channel);
             var message = new UnsubscribeRequestMessage(ClientId,
                                                         channel);
-            UnsubscribeResponseMessage result;
-            try
-            {
-                result = await ExecuteControlMessage<UnsubscribeResponseMessage>(message: message,
+
+            var result = await ExecuteControlMessage<UnsubscribeResponseMessage>(message: message,
                                                                                  timeoutValue: StandardCommandTimeout);
-            }
-            catch (TimeoutException)
-            {
-                throw new NotImplementedException();
-            }
+
             if (!result.Successful) throw new SubscriptionException(result.Error);
             _subscribedChannels.Remove(channel);
         }
