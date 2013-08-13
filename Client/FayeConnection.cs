@@ -20,7 +20,9 @@ namespace Bsw.FayeDotNet.Client
     {
         internal const string ALREADY_DISCONNECTED = "Already disconnected";
         internal const string WILDCARD_CHANNEL_ERROR_FORMAT =
-            "Wildcard channels (you tried to subscribe to {0}) are not currently supported with this client";
+            "Wildcard channels (you tried to subscribe/unsubscribe from {0}) are not currently supported with this client";
+        internal const string NOT_SUBSCRIBED =
+            "You cannot unsubscribe from channel '{0}' because you were not subscribed to it first";
 
         private readonly IWebSocket _socket;
         private readonly Dictionary<string, List<Action<string>>> _subscribedChannels;
@@ -123,9 +125,36 @@ namespace Bsw.FayeDotNet.Client
                         channel);
         }
 
-        public Task Unsubscribe(string channel)
+        public async Task Unsubscribe(string channel)
         {
-            throw new NotImplementedException();
+            if (channel.Contains("*"))
+            {
+                var error = string.Format(WILDCARD_CHANNEL_ERROR_FORMAT,
+                                          channel);
+                throw new SubscriptionException(error);
+            }
+            if (!_subscribedChannels.ContainsKey(channel))
+            {
+                var error = string.Format(NOT_SUBSCRIBED,
+                                          channel);
+                throw new SubscriptionException(error);
+            }
+            Logger.Debug("Unsubscribing from channel '{0}'",
+                         channel);
+            var message = new UnsubscribeRequestMessage(ClientId,
+                                                        channel);
+            UnsubscribeResponseMessage result;
+            try
+            {
+                result = await ExecuteControlMessage<UnsubscribeResponseMessage>(message: message,
+                                                                                 timeoutValue: StandardCommandTimeout);
+            }
+            catch (TimeoutException)
+            {
+                throw new NotImplementedException();
+            }
+            if (!result.Successful) throw new SubscriptionException(result.Error);
+            _subscribedChannels.Remove(channel);
         }
 
         public async Task Publish(string channel,

@@ -7,6 +7,8 @@ namespace Bsw.FayeDotNet.Messages
     {
         [StringValue("/meta/subscribe")]
         Subscribe,
+        [StringValue("/meta/unsubscribe")]
+        Unsubscribe,
         [StringValue("/meta/handshake")]
         Handshake,
         [StringValue("/meta/disconnect")]
