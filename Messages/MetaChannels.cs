@@ -5,6 +5,8 @@ namespace Bsw.FayeDotNet.Messages
 {
     public enum MetaChannels
     {
+        [StringValue("/meta/connect")]
+        Connect,
         [StringValue("/meta/subscribe")]
         Subscribe,
         [StringValue("/meta/unsubscribe")]

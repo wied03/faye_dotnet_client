@@ -20,7 +20,10 @@ namespace Bsw.FayeDotNet.Client
     public class FayeClient : FayeClientBase,
                               IFayeClient
     {
-        private const string ONLY_SUPPORTED_CONNECTION_TYPE = "websocket";
+        internal const string ONLY_SUPPORTED_CONNECTION_TYPE = "websocket";
+        internal const string CONNECTION_TYPE_ERROR_FORMAT =
+            "We only support 'websocket' and the server only supports [{0}] so we cannot communicate";
+
         private readonly IWebSocket _socket;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -37,10 +40,14 @@ namespace Bsw.FayeDotNet.Client
         public async Task<IFayeConnection> Connect()
         {
             await OpenWebSocket();
-            return await Handshake();
+            var handshakeResponse = await Handshake();
+            // having problems with our connect code for some reason
+            //await SendConnect(handshakeResponse);
+            return new FayeConnection(socket: _socket,
+                                      handshakeResponse: handshakeResponse);
         }
 
-        private async Task<IFayeConnection> Handshake()
+        private async Task<HandshakeResponseMessage> Handshake()
         {
             var message = new HandshakeRequestMessage(new[] {ONLY_SUPPORTED_CONNECTION_TYPE});
             HandshakeResponseMessage result;
@@ -55,10 +62,41 @@ namespace Bsw.FayeDotNet.Client
             }
             if (result.Successful)
             {
-                return new FayeConnection(_socket,
-                                          result);
+                if (!result.SupportedConnectionTypes.Contains(ONLY_SUPPORTED_CONNECTION_TYPE))
+                {
+                    var flatTypes = result
+                        .SupportedConnectionTypes
+                        .Select(ct => "'" + ct + "'")
+                        .Aggregate((c1,
+                                    c2) => c1 + "," + c2);
+                    var error = string.Format(CONNECTION_TYPE_ERROR_FORMAT,
+                                              flatTypes);
+                    throw new HandshakeException(error);
+                }
+                return result;
             }
             throw new HandshakeException(result.Error);
+        }
+
+        private async Task SendConnect(HandshakeResponseMessage handshakeResponse)
+        {
+            var message = new ConnectRequestMessage(clientId: handshakeResponse.ClientId,
+                                                    connectionType: ONLY_SUPPORTED_CONNECTION_TYPE);
+            ConnectResponseMessage result;
+            try
+            {
+                result = await ExecuteControlMessage<ConnectResponseMessage>(message,
+                                                                             HandshakeTimeout);
+            }
+            catch (TimeoutException)
+            {
+                throw new HandshakeException(HandshakeTimeout);
+            }
+            if (result.Successful)
+            {
+                return;
+            }
+            throw new FayeConnectionException(result.Error);
         }
 
         private async Task OpenWebSocket()

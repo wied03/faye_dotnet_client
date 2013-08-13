@@ -11,7 +11,7 @@ namespace Bsw.FayeDotNet.Client
     public class HandshakeException : Exception
     {
         public HandshakeException(string responseDetails)
-            : base(string.Format("Handshaking with server failed.  Response from server was: {0}",
+            : base(string.Format("Handshaking with server failed. Reason: {0}",
                                  responseDetails))
         {
         }

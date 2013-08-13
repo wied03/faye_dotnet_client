@@ -11,7 +11,6 @@ namespace Bsw.FayeDotNet.Messages
 {
     internal class HandshakeRequestMessage : BaseFayeMessage
     {
-        internal const string HANDSHAKE_MESSAGE = "/meta/handshake";
         internal const string BAYEUX_VERSION_1 = "1.0";
         public string Version { get; set; }
         public List<string> SupportedConnectionTypes { get; set; }

@@ -64,6 +64,8 @@
     <Compile Include="Client\TimeoutException.cs" />
     <Compile Include="Messages\BaseFayeMessage.cs" />
     <Compile Include="Client\IFayeClient.cs" />
+    <Compile Include="Messages\ConnectRequestMessage.cs" />
+    <Compile Include="Messages\ConnectResponseMessage.cs" />
     <Compile Include="Messages\DataMessage.cs" />
     <Compile Include="Messages\DisconnectRequestMessage.cs" />
     <Compile Include="Messages\DisconnectResponseMessage.cs" />
