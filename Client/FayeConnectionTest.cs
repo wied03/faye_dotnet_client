@@ -60,17 +60,23 @@ namespace Bsw.FayeDotNet.Test.Client
         [TearDown]
         public override void Teardown()
         {
-            if (_connection != null)
+            try
             {
-                AsyncContext.Run(() => _connection.Disconnect());
+                if (_connection != null)
+                {
+                    AsyncContext.Run(() => _connection.Disconnect());
+                }
             }
-            if (_fayeServerProcess.Started)
+            finally
             {
-                _fayeServerProcess.GracefulShutdown();
-            }
-            if (_socatInterceptor != null)
-            {
-                _socatInterceptor.Kill();
+                if (_fayeServerProcess.Started)
+                {
+                    _fayeServerProcess.GracefulShutdown();
+                }
+                if (_socatInterceptor != null)
+                {
+                    _socatInterceptor.Kill();
+                }
             }
             base.Teardown();
         }
@@ -153,9 +159,9 @@ namespace Bsw.FayeDotNet.Test.Client
         {
             // port 8133
             const int inputPort = THIN_SERVER_PORT + 1;
+            _fayeServerProcess.StartThinServer();
             _socatInterceptor = StartWritableSocket(hostname: "localhost",
                                                     inputPort: inputPort);
-            _fayeServerProcess.StartThinServer();
             const string urlThroughSocat = "ws://localhost:8133/bayeux";
             var socket = new WebSocketClient(uri: urlThroughSocat);
             SetupWebSocket(socket);
@@ -166,29 +172,29 @@ namespace Bsw.FayeDotNet.Test.Client
             var messageToSend = new TestMsg {Stuff = "the message"};
 
             // act
-            
-                await _connection.Subscribe(channelName,
-                                            tcs.SetResult);
-                var json = JsonConvert.SerializeObject(messageToSend);
-                // TODO: Uncomment these once this test passes without killing the interceptor
-                //socatInterceptor.Kill();
-                //socatInterceptor = StartWritableSocket(hostname: "localhost",
-                //                                       inputPort: inputPort);
-                await _connection.Publish(channel: channelName,
-                                          message: json);
-                // assert
-                var task = tcs.Task;
-                var result = await task.Timeout(5.Seconds());
-                if (result == Result.Timeout)
-                {
-                    Assert.Fail("Timed out waiting for pub/sub to work");
-                }
-                var jsonReceived = task.Result;
-                var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
-                objectReceived
-                    .ShouldBeEquivalentTo(messageToSend);
-           
-            Assert.Fail("Get this test working without killing/restarting socat and then uncomment the 2 lines above");
+
+            await _connection.Subscribe(channelName,
+                                        tcs.SetResult);
+            var json = JsonConvert.SerializeObject(messageToSend);
+            // TODO: Uncomment these once this test passes without killing the interceptor
+            //socatInterceptor.Kill();
+            //socatInterceptor = StartWritableSocket(hostname: "localhost",
+            //                                       inputPort: inputPort);
+            await _connection.Publish(channel: channelName,
+                                      message: json);
+            // assert
+            var task = tcs.Task;
+            var result = await task.Timeout(5.Seconds());
+            if (result == Result.Timeout)
+            {
+                Assert.Fail("Timed out waiting for pub/sub to work");
+            }
+            var jsonReceived = task.Result;
+            var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+            objectReceived
+                .ShouldBeEquivalentTo(messageToSend);
+
+            Assert.Fail("Get this test working without killing/restarting socat and then uncomment the 2 lines above.  It won't pass until Publish_to_channel_we_subscribed_to passes");
         }
 
         private class TestMsg
@@ -235,6 +241,38 @@ namespace Bsw.FayeDotNet.Test.Client
             {
                 secondConnection.Disconnect().Wait();
             }
+        }
+
+        [Test]
+        public async Task Publish_to_channel_we_subscribed_to()
+        {
+            // arrange
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: TEST_SERVER_URL);
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            var tcs = new TaskCompletionSource<string>();
+            const string channelName = "/somechannel";
+            var messageToSend = new TestMsg {Stuff = "the message"};
+
+            // act
+            await _connection.Subscribe(channelName,
+                                        tcs.SetResult);
+            var json = JsonConvert.SerializeObject(messageToSend);
+            await _connection.Publish(channel: channelName,
+                                      message: json);
+            // assert
+            var task = tcs.Task;
+            var result = await task.Timeout(5.Seconds());
+            if (result == Result.Timeout)
+            {
+                Assert.Fail("Timed out waiting for pub/sub to work");
+            }
+            var jsonReceived = task.Result;
+            var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+            objectReceived
+                .ShouldBeEquivalentTo(messageToSend);
         }
 
         [Test]
