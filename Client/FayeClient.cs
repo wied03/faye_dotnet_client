@@ -20,7 +20,6 @@ namespace Bsw.FayeDotNet.Client
     public class FayeClient : FayeClientBase,
                               IFayeClient
     {
-        internal const string ONLY_SUPPORTED_CONNECTION_TYPE = "websocket";
         internal const string CONNECTION_TYPE_ERROR_FORMAT =
             "We only support 'websocket' and the server only supports [{0}] so we cannot communicate";
 
@@ -41,8 +40,7 @@ namespace Bsw.FayeDotNet.Client
         {
             await OpenWebSocket();
             var handshakeResponse = await Handshake();
-            // having problems with our connect code for some reason
-            //await SendConnect(handshakeResponse);
+            SendConnect(handshakeResponse.ClientId);
             return new FayeConnection(socket: _socket,
                                       handshakeResponse: handshakeResponse);
         }
@@ -76,27 +74,6 @@ namespace Bsw.FayeDotNet.Client
                 return result;
             }
             throw new HandshakeException(result.Error);
-        }
-
-        private async Task SendConnect(HandshakeResponseMessage handshakeResponse)
-        {
-            var message = new ConnectRequestMessage(clientId: handshakeResponse.ClientId,
-                                                    connectionType: ONLY_SUPPORTED_CONNECTION_TYPE);
-            ConnectResponseMessage result;
-            try
-            {
-                result = await ExecuteControlMessage<ConnectResponseMessage>(message,
-                                                                             HandshakeTimeout);
-            }
-            catch (TimeoutException)
-            {
-                throw new HandshakeException(HandshakeTimeout);
-            }
-            if (result.Successful)
-            {
-                return;
-            }
-            throw new FayeConnectionException(result.Error);
         }
 
         private async Task OpenWebSocket()

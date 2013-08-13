@@ -14,6 +14,7 @@ namespace Bsw.FayeDotNet.Client
 {
     public abstract class FayeClientBase
     {
+        internal const string ONLY_SUPPORTED_CONNECTION_TYPE = "websocket";
         private readonly IWebSocket _socket;
         protected readonly FayeJsonConverter Converter;
 
@@ -40,6 +41,14 @@ namespace Bsw.FayeDotNet.Client
             }
             _socket.MessageReceived -= received;
             return Converter.Deserialize<T>(task.Result.Message);
+        }
+
+        protected void SendConnect(string clientId)
+        {
+            var message = new ConnectRequestMessage(clientId: clientId,
+                                                    connectionType: ONLY_SUPPORTED_CONNECTION_TYPE);
+            var json = Converter.Serialize(message);
+            _socket.Send(json);
         }
     }
 }
