@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.WebSocket4NetSslExt.Socket;
+using MsBw.MsBwUtility.Tasks;
 using NLog;
 using WebSocket4Net;
 
@@ -28,6 +29,7 @@ namespace Bsw.FayeDotNet.Client
 
         private readonly IWebSocket _socket;
         private readonly Dictionary<string, List<Action<string>>> _subscribedChannels;
+        private readonly Dictionary<int, TaskCompletionSource<MessageReceivedEventArgs>> _synchronousMessageEvents;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private static readonly TimeSpan StandardCommandTimeout = new TimeSpan(0,
@@ -37,21 +39,45 @@ namespace Bsw.FayeDotNet.Client
         public string ClientId { get; private set; }
 
         public FayeConnection(IWebSocket socket,
-                              HandshakeResponseMessage handshakeResponse) : base(socket)
+                              HandshakeResponseMessage handshakeResponse,
+                              int messageCounter) : base(socket: socket,
+                                                         messageCounter: messageCounter)
         {
             _socket = socket;
             ClientId = handshakeResponse.ClientId;
             _socket.MessageReceived += SocketMessageReceived;
             _subscribedChannels = new Dictionary<string, List<Action<string>>>();
+            _synchronousMessageEvents = new Dictionary<int, TaskCompletionSource<MessageReceivedEventArgs>>();
+        }
+
+        private async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
+                                                           TimeSpan timeoutValue) where T : BaseFayeMessage
+        {
+            var json = Converter.Serialize(message);
+            var tcs = new TaskCompletionSource<MessageReceivedEventArgs>();
+            _synchronousMessageEvents[message.Id] = tcs;
+            _socket.Send(json);
+            var task = tcs.Task;
+            var result = await task.Timeout(timeoutValue);
+            if (result == Result.Timeout)
+            {
+                throw new TimeoutException();
+            }
+            _synchronousMessageEvents.Remove(message.Id);
+            return Converter.Deserialize<T>(task.Result.Message);
         }
 
         private void SocketMessageReceived(object sender,
                                            MessageReceivedEventArgs e)
         {
+            var baseMessage = Converter.Deserialize<BaseFayeMessage>(e.Message);
+            if (_synchronousMessageEvents.ContainsKey(baseMessage.Id))
+            {
+                _synchronousMessageEvents[baseMessage.Id].SetResult(e);
+                return;
+            }
             var message = Converter.Deserialize<DataMessage>(e.Message);
             var channel = message.Channel;
-            // could be another subscribe/publish message
-            if (!_subscribedChannels.ContainsKey(channel)) return;
             var messageData = message.Data.ToString(CultureInfo.InvariantCulture);
             Logger.Debug("Message data received for channel '{0}' is '{1}",
                          channel,
@@ -66,12 +92,11 @@ namespace Bsw.FayeDotNet.Client
                 throw new FayeConnectionException(ALREADY_DISCONNECTED);
             }
             Logger.Info("Disconnecting from FAYE server");
-            _socket.MessageReceived -= SocketMessageReceived;
-
-            var disconnectMessage = new DisconnectRequestMessage(ClientId);
+            var disconnectMessage = new DisconnectRequestMessage(clientId: ClientId,
+                                                                 id: MessageCounter++);
             var disconResult = await ExecuteSynchronousMessage<DisconnectResponseMessage>(message: disconnectMessage,
-                                                                                      timeoutValue:
-                                                                                          StandardCommandTimeout);
+                                                                                          timeoutValue:
+                                                                                              StandardCommandTimeout);
             if (!disconResult.Successful)
             {
                 throw new NotImplementedException();
@@ -103,11 +128,13 @@ namespace Bsw.FayeDotNet.Client
             }
             Logger.Debug("Subscribing to channel '{0}'",
                          channel);
-            var message = new SubscriptionRequestMessage(ClientId,
-                                                         channel);
+            var message = new SubscriptionRequestMessage(clientId: ClientId,
+                                                         subscriptionChannel: channel,
+                                                         id: MessageCounter++);
 
             var result = await ExecuteSynchronousMessage<SubscriptionResponseMessage>(message: message,
-                                                                                  timeoutValue: StandardCommandTimeout);
+                                                                                      timeoutValue:
+                                                                                          StandardCommandTimeout);
 
             if (!result.Successful) throw new SubscriptionException(result.Error);
             AddLocalChannelHandler(channel,
@@ -145,11 +172,13 @@ namespace Bsw.FayeDotNet.Client
             }
             Logger.Debug("Unsubscribing from channel '{0}'",
                          channel);
-            var message = new UnsubscribeRequestMessage(ClientId,
-                                                        channel);
+            var message = new UnsubscribeRequestMessage(clientId: ClientId,
+                                                        subscriptionChannel: channel,
+                                                        id: MessageCounter++);
 
             var result = await ExecuteSynchronousMessage<UnsubscribeResponseMessage>(message: message,
-                                                                                 timeoutValue: StandardCommandTimeout);
+                                                                                     timeoutValue:
+                                                                                         StandardCommandTimeout);
 
             if (!result.Successful) throw new SubscriptionException(result.Error);
             _subscribedChannels.Remove(channel);
@@ -163,9 +192,10 @@ namespace Bsw.FayeDotNet.Client
                          message);
             var msg = new DataMessage(channel: channel,
                                       clientId: ClientId,
-                                      data: message);
+                                      data: message,
+                                      id: MessageCounter++);
             var result = await ExecuteSynchronousMessage<PublishResponseMessage>(message: msg,
-                                                                             timeoutValue: StandardCommandTimeout);
+                                                                                 timeoutValue: StandardCommandTimeout);
             if (!result.Successful)
             {
                 throw new PublishException(result.Error);

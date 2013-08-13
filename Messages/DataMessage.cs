@@ -15,14 +15,16 @@ namespace Bsw.FayeDotNet.Messages
         public JRaw Data { get; set; }
 
         // for JSON serializer
-        public DataMessage() : base()
+        public DataMessage()
         {
         }
 
         public DataMessage(string channel,
                            string clientId,
-                           string data)
-            : base(channel)
+                           string data,
+                           int id)
+            : base(channel: channel,
+                   id: id)
         {
             ClientId = clientId;
             Data = new JRaw(data);

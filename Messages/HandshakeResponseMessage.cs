@@ -16,13 +16,17 @@ namespace Bsw.FayeDotNet.Messages
         public string ClientId { get; set; }
 
         // for JSON deserializer
-        public HandshakeResponseMessage() : base() { }
+        public HandshakeResponseMessage()
+        {
+        }
 
         public HandshakeResponseMessage(IEnumerable<string> supportedConnectionTypes,
                                         bool successful,
                                         string clientId,
+                                        int id,
                                         string version = BAYEUX_VERSION_1)
             : base(supportedConnectionTypes,
+                   id,
                    version)
         {
             Successful = successful;

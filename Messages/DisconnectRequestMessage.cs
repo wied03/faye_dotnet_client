@@ -13,9 +13,14 @@ namespace Bsw.FayeDotNet.Messages
         public string ClientId { get; set; }
 
         // for JSON serializer
-        protected DisconnectRequestMessage() : base(MetaChannels.Disconnect) {}
+        protected DisconnectRequestMessage()
+        {
+        }
 
-        public DisconnectRequestMessage(string clientId) : this()
+        public DisconnectRequestMessage(string clientId,
+                                        int id)
+            : base(channel: MetaChannels.Disconnect,
+                   id: id)
         {
             ClientId = clientId;
         }

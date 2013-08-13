@@ -16,13 +16,15 @@ namespace Bsw.FayeDotNet.Messages
         public List<string> SupportedConnectionTypes { get; set; }
 
         // for JSON deserializer
-        public HandshakeRequestMessage() : base(MetaChannels.Handshake)
+        public HandshakeRequestMessage()
         {
         }
 
         public HandshakeRequestMessage(IEnumerable<string> supportedConnectionTypes,
+                                       int id,
                                        string version = BAYEUX_VERSION_1)
-            : this()
+            : base(channel: MetaChannels.Handshake,
+                   id: id)
         {
             Version = version;
             SupportedConnectionTypes = new List<string>(supportedConnectionTypes);

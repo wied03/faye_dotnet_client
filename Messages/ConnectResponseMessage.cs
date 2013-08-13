@@ -14,13 +14,15 @@ namespace Bsw.FayeDotNet.Messages
         public string Error { get; set; }
 
         // for JSON serializer
-        public ConnectResponseMessage() : base()
+        public ConnectResponseMessage()
         {
         }
 
         public ConnectResponseMessage(string clientId,
-                                      string connectionType) : base(clientId,
-                                                                    connectionType)
+                                      string connectionType,
+                                      int id) : base(clientId,
+                                                     connectionType,
+                                                     id)
         {
         }
     }

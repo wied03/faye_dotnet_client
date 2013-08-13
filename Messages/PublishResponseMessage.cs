@@ -14,16 +14,18 @@ namespace Bsw.FayeDotNet.Messages
         public string Error { get; set; }
 
         // for JSON serializer
-        public PublishResponseMessage() : base()
+        public PublishResponseMessage()
         {
         }
 
         public PublishResponseMessage(string channel,
                                       string clientId,
                                       string data,
-                                      bool successful) : base(channel,
-                                                              clientId,
-                                                              data)
+                                      bool successful,
+                                      int id) : base(channel,
+                                                     clientId,
+                                                     data,
+                                                     id)
         {
             Successful = successful;
         }

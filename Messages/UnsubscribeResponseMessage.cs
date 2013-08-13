@@ -14,8 +14,10 @@ namespace Bsw.FayeDotNet.Messages
         public string Error { get; set; }
 
         public UnsubscribeResponseMessage(string clientId,
-                                          string subscriptionChannel) : base(clientId,
-                                                                             subscriptionChannel)
+                                          string subscriptionChannel,
+                                          int id) : base(clientId,
+                                                         subscriptionChannel,
+                                                         id)
         {
         }
     }

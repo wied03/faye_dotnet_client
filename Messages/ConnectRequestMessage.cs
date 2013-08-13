@@ -14,12 +14,14 @@ namespace Bsw.FayeDotNet.Messages
         public string ConnectionType { get; set; }
 
         // for JSON serializer
-        public ConnectRequestMessage() : base(MetaChannels.Connect)
+        public ConnectRequestMessage()
         {
         }
 
         public ConnectRequestMessage(string clientId,
-                                     string connectionType) : this()
+                                     string connectionType,
+                                     int id) : base(channel: MetaChannels.Connect,
+                                                    id: id)
         {
             ClientId = clientId;
             ConnectionType = connectionType;

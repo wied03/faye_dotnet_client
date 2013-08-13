@@ -9,21 +9,28 @@ using MsBw.MsBwUtility.Enum;
 
 namespace Bsw.FayeDotNet.Messages
 {
-    public abstract class BaseFayeMessage
+    public class BaseFayeMessage
     {
-        protected BaseFayeMessage(MetaChannels channel)
-            : this(channel.StringValue())
+        protected BaseFayeMessage(MetaChannels channel,
+                                  int id)
+            : this(channel: channel.StringValue(),
+                   id: id)
         {
         }
 
-        protected BaseFayeMessage(string channel)
+        protected BaseFayeMessage(string channel,
+                                  int id)
         {
             Channel = channel;
+            Id = id;
         }
 
         // for JSON serializer
-        protected BaseFayeMessage() {}
+        public BaseFayeMessage()
+        {
+        }
 
         public string Channel { get; set; }
+        public int Id { get; set; }
     }
 }

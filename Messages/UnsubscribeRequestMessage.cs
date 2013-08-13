@@ -14,7 +14,9 @@ namespace Bsw.FayeDotNet.Messages
         public string Subscription { get; set; }
 
         public UnsubscribeRequestMessage(string clientId,
-                                         string subscriptionChannel) : base(MetaChannels.Unsubscribe)
+                                         string subscriptionChannel,
+                                         int id) : base(channel: MetaChannels.Unsubscribe,
+                                                        id: id)
         {
             ClientId = clientId;
             Subscription = subscriptionChannel;

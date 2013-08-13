@@ -12,9 +12,12 @@ namespace Bsw.FayeDotNet.Messages
     {
         public bool Successful { get; set; }
         public string Error { get; set; }
+
         public SubscriptionResponseMessage(string clientId,
-                                           string subscriptionChannel) : base(clientId,
-                                                                              subscriptionChannel)
+                                           string subscriptionChannel,
+                                           int id) : base(clientId,
+                                                          subscriptionChannel,
+                                                          id)
         {
         }
     }
