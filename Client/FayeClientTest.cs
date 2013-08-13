@@ -13,6 +13,7 @@ using Bsw.FayeDotNet.Messages;
 using Bsw.RubyExecution;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
+using MsBw.MsBwUtility.Enum;
 using MsbwTest;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -29,7 +30,6 @@ namespace Bsw.FayeDotNet.Test.Client
         #region Test Fields
 
         private IWebSocket _websocket;
-        private List<string> _messagesSent;
         private IFayeClient _fayeClient;
         private IFayeConnection _connection;
         private RubyProcess _fayeServerProcess;
@@ -49,7 +49,6 @@ namespace Bsw.FayeDotNet.Test.Client
         public override void SetUp()
         {
             base.SetUp();
-            _messagesSent = new List<string>();
             _fayeClient = null;
             _websocket = null;
             _connection = null;
@@ -85,17 +84,33 @@ namespace Bsw.FayeDotNet.Test.Client
             _websocket = webSocket;
         }
 
-        private static string GetHandshakeResponse(bool successful = true, string error = null)
+        private static string GetHandshakeResponse(bool successful = true, string error = null,List<string> connTypes = null)
+        {
+            var supportedConnectionTypes = connTypes ?? new List<string> {FayeClient.ONLY_SUPPORTED_CONNECTION_TYPE};
+            var response =
+                new
+                {
+                    channel = MetaChannels.Handshake.StringValue(),
+                    version = HandshakeRequestMessage.BAYEUX_VERSION_1,
+                    successful,
+                    error,
+                    supportedConnectionTypes
+                };
+            return JsonConvert.SerializeObject(new[] {response});
+        }
+
+        private static string GetConnectResponse(string clientId,bool successful = true, string error = null)
         {
             var response =
                 new
                 {
-                    channel = HandshakeRequestMessage.HANDSHAKE_MESSAGE,
+                    channel = MetaChannels.Connect.StringValue(),
                     version = HandshakeRequestMessage.BAYEUX_VERSION_1,
                     successful,
-                    error
+                    error,
+                    clientId
                 };
-            return JsonConvert.SerializeObject(new[] {response});
+            return JsonConvert.SerializeObject(new[] { response });
         }
 
         #endregion
@@ -129,7 +144,7 @@ namespace Bsw.FayeDotNet.Test.Client
                                                     handler.Invoke(this,
                                                                    new EventArgs());
                                                 },
-                                 MessageReceiveAction = () =>
+                                 MessageReceiveAction = gotThis =>
                                                         {
                                                             Thread.Sleep(100);
                                                             return GetHandshakeResponse(successful: false,
@@ -145,7 +160,7 @@ namespace Bsw.FayeDotNet.Test.Client
                                           .ShouldThrow<HandshakeException>();
             result.Message
                   .Should()
-                  .Be("Handshaking with server failed.  Response from server was: something failed");
+                  .Be("Handshaking with server failed. Reason: something failed");
         }
 
         [Test]
@@ -177,7 +192,76 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public async Task Connect_handshake_completes_ok()
+        public async Task Connect_handshakesucceeds_connect_fails()
+        {
+            // arrange
+            var mockSocket = new MockSocket
+            {
+                OpenedAction = handler =>
+                {
+                    Thread.Sleep(100);
+                    handler.Invoke(this,
+                                   new EventArgs());
+                },
+                MessageReceiveAction = gotThisMsg =>
+                {
+                    Thread.Sleep(100);
+                    return gotThisMsg.Contains("handshake")
+                               ? GetHandshakeResponse()
+                               : GetConnectResponse(clientId: "123",
+                                                    successful: false,
+                                                    error: "connect failed for some reason");
+                }
+            };
+
+            SetupWebSocket(mockSocket);
+            InstantiateFayeClient();
+
+            // act + assert
+            var exception = await _fayeClient.InvokingAsync(c => c.Connect())
+                                             .ShouldThrow<FayeConnectionException>();
+            exception
+                .Message
+                .Should()
+                .Be("connect failed for some reason");
+        }
+
+        [Test]
+        public async Task Connect_no_common_connection_types()
+        {
+            // arrange
+            var mockSocket = new MockSocket
+            {
+                OpenedAction = handler =>
+                {
+                    Thread.Sleep(100);
+                    handler.Invoke(this,
+                                   new EventArgs());
+                },
+                MessageReceiveAction = gotThisMsg =>
+                {
+                    Thread.Sleep(100);
+                    return GetHandshakeResponse(connTypes: new List<string> {"someTypeWeDontSupport"});
+                }
+            };
+
+            SetupWebSocket(mockSocket);
+            InstantiateFayeClient();
+
+            // act + assert
+            var exception = await _fayeClient.InvokingAsync(c => c.Connect())
+                                             .ShouldThrow<HandshakeException>();
+            var expectedError = "Handshaking with server failed. Reason: " +
+                                string.Format(FayeClient.CONNECTION_TYPE_ERROR_FORMAT,
+                                              "'someTypeWeDontSupport'");
+            exception
+                .Message
+                .Should()
+                .Be(expectedError);
+        }
+
+        [Test]
+        public async Task Connect_handshake_and_connect_complete_ok()
         {
             // arrange
             _fayeServerProcess.StartThinServer();

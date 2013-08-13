@@ -17,7 +17,7 @@ namespace Bsw.FayeDotNet.Test.Client
     {
         public Action<EventHandler> OpenedAction;
         public Action<string> MessageSentAction;
-        public Func<string> MessageReceiveAction;
+        public Func<string,string> MessageReceiveAction;
 
         public void Open()
         {
@@ -33,7 +33,7 @@ namespace Bsw.FayeDotNet.Test.Client
             if (MessageReceiveAction != null)
             {
                 Task.Factory.StartNew(() => MessageReceived(this,
-                                                            new MessageReceivedEventArgs(MessageReceiveAction.Invoke())));
+                                                            new MessageReceivedEventArgs(MessageReceiveAction.Invoke(message))));
             }
         }
 
