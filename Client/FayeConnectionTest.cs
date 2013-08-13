@@ -1,6 +1,7 @@
 ﻿#region
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -22,6 +23,7 @@ namespace Bsw.FayeDotNet.Test.Client
     public class FayeConnectionTest : BaseTest
     {
         private const string TEST_SERVER_URL = "ws://localhost:8132/bayeux";
+        protected const int THIN_SERVER_PORT = 8132;
 
         #region Test Fields
 
@@ -30,6 +32,7 @@ namespace Bsw.FayeDotNet.Test.Client
         private IFayeConnection _connection;
         private RubyProcess _fayeServerProcess;
         private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
+        private Process _socatInterceptor;
 
         #endregion
 
@@ -48,8 +51,9 @@ namespace Bsw.FayeDotNet.Test.Client
             _fayeClient = null;
             _websocket = null;
             _connection = null;
-            _fayeServerProcess = new RubyProcess(thinPort: 8132,
+            _fayeServerProcess = new RubyProcess(thinPort: THIN_SERVER_PORT,
                                                  workingDirectory: WorkingDirectory);
+            _socatInterceptor = null;
         }
 
         [TearDown]
@@ -62,6 +66,10 @@ namespace Bsw.FayeDotNet.Test.Client
             if (_fayeServerProcess.Started)
             {
                 _fayeServerProcess.GracefulShutdown();
+            }
+            if (_socatInterceptor != null)
+            {
+                _socatInterceptor.Kill();
             }
             base.Teardown();
         }
@@ -78,6 +86,32 @@ namespace Bsw.FayeDotNet.Test.Client
         private void SetupWebSocket(IWebSocket webSocket)
         {
             _websocket = webSocket;
+        }
+
+        private static Process StartWritableSocket(string hostname,
+                                                   int inputPort)
+        {
+            return StartSocat("TCP4-LISTEN:{0} TCP4:{1}:{2}",
+                              inputPort,
+                              hostname,
+                              THIN_SERVER_PORT);
+        }
+
+        private static Process StartSocat(string argsFormat,
+                                          params object[] args)
+        {
+            var arguments = string.Format(argsFormat,
+                                          args);
+            var path = Path.GetFullPath("../../../lib/socat-1.7.2.1/socat.exe");
+            var procStart = new ProcessStartInfo
+                            {
+                                FileName = path,
+                                CreateNoWindow = true,
+                                WindowStyle = ProcessWindowStyle.Hidden,
+                                Arguments = arguments
+                            };
+            var process = Process.Start(procStart);
+            return process;
         }
 
         #endregion
@@ -116,14 +150,44 @@ namespace Bsw.FayeDotNet.Test.Client
         [Test]
         public async Task Connect_lost_connection_retry_happens_properly()
         {
-            // TODO: Setup socat between the thin server and the .NET client, then break the connection
-            // TODO: Figure out when the FAYE client issues the connect command and how it determines when the transport goes down
-            // arrange
+            // port 8133
+            const int inputPort = THIN_SERVER_PORT + 1;
+            _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                    inputPort: inputPort);
+            _fayeServerProcess.StartThinServer();
+            const string urlThroughSocat = "ws://localhost:8133/bayeux";
+            var socket = new WebSocketClient(uri: urlThroughSocat);
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            var tcs = new TaskCompletionSource<string>();
+            const string channelName = "/somechannel";
+            var messageToSend = new TestMsg {Stuff = "the message"};
 
             // act
-
-            // assert
-            Assert.Fail("write test");
+            
+                await _connection.Subscribe(channelName,
+                                            tcs.SetResult);
+                var json = JsonConvert.SerializeObject(messageToSend);
+                // TODO: Uncomment these once this test passes without killing the interceptor
+                //socatInterceptor.Kill();
+                //socatInterceptor = StartWritableSocket(hostname: "localhost",
+                //                                       inputPort: inputPort);
+                await _connection.Publish(channel: channelName,
+                                          message: json);
+                // assert
+                var task = tcs.Task;
+                var result = await task.Timeout(5.Seconds());
+                if (result == Result.Timeout)
+                {
+                    Assert.Fail("Timed out waiting for pub/sub to work");
+                }
+                var jsonReceived = task.Result;
+                var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+                objectReceived
+                    .ShouldBeEquivalentTo(messageToSend);
+           
+            Assert.Fail("Get this test working without killing/restarting socat and then uncomment the 2 lines above");
         }
 
         private class TestMsg
@@ -144,7 +208,7 @@ namespace Bsw.FayeDotNet.Test.Client
             var secondConnection = await secondClient.Connect();
             var tcs = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
-            var messageToSend = new TestMsg { Stuff = "the message" };
+            var messageToSend = new TestMsg {Stuff = "the message"};
 
             // act
             try
@@ -186,7 +250,7 @@ namespace Bsw.FayeDotNet.Test.Client
             var tcs = new TaskCompletionSource<string>();
             var tcs2 = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
-            var messageToSend = new TestMsg { Stuff = "the message" };
+            var messageToSend = new TestMsg {Stuff = "the message"};
 
             // act
             try
@@ -259,7 +323,7 @@ namespace Bsw.FayeDotNet.Test.Client
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
             const string invalidChannel = "/*";
-            var messageToSendObj = new TestMsg { Stuff = "the message" };
+            var messageToSendObj = new TestMsg {Stuff = "the message"};
             var messageToSend = JsonConvert.SerializeObject(messageToSendObj);
 
             // act + assert
@@ -346,7 +410,7 @@ namespace Bsw.FayeDotNet.Test.Client
             var secondConnection = await secondClient.Connect();
             const string channelName = "/somechannel";
             var tcs = new TaskCompletionSource<object>();
-            var messageToSendObj = new TestMsg { Stuff = "the message" };
+            var messageToSendObj = new TestMsg {Stuff = "the message"};
             var messageToSend = JsonConvert.SerializeObject(messageToSendObj);
 
             try
