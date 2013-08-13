@@ -192,41 +192,6 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public async Task Connect_handshakesucceeds_connect_fails()
-        {
-            // arrange
-            var mockSocket = new MockSocket
-            {
-                OpenedAction = handler =>
-                {
-                    Thread.Sleep(100);
-                    handler.Invoke(this,
-                                   new EventArgs());
-                },
-                MessageReceiveAction = gotThisMsg =>
-                {
-                    Thread.Sleep(100);
-                    return gotThisMsg.Contains("handshake")
-                               ? GetHandshakeResponse()
-                               : GetConnectResponse(clientId: "123",
-                                                    successful: false,
-                                                    error: "connect failed for some reason");
-                }
-            };
-
-            SetupWebSocket(mockSocket);
-            InstantiateFayeClient();
-
-            // act + assert
-            var exception = await _fayeClient.InvokingAsync(c => c.Connect())
-                                             .ShouldThrow<FayeConnectionException>();
-            exception
-                .Message
-                .Should()
-                .Be("connect failed for some reason");
-        }
-
-        [Test]
         public async Task Connect_no_common_connection_types()
         {
             // arrange
