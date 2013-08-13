@@ -171,6 +171,60 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
+        public async Task Subscribe_twice()
+        {
+            // arrange
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: TEST_SERVER_URL);
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            var secondClient = new FayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
+            var secondConnection = await secondClient.Connect();
+            var tcs = new TaskCompletionSource<string>();
+            var tcs2 = new TaskCompletionSource<string>();
+            const string channelName = "/somechannel";
+            var messageToSend = new TestMsg { Stuff = "the message" };
+
+            // act
+            try
+            {
+                await _connection.Subscribe(channelName,
+                                            tcs.SetResult);
+                await _connection.Subscribe(channelName,
+                                            tcs2.SetResult);
+                var json = JsonConvert.SerializeObject(messageToSend);
+                await secondConnection.Publish(channel: channelName,
+                                               message: json);
+                // assert
+                var task = tcs.Task;
+                var result = await task.Timeout(5.Seconds());
+                if (result == Result.Timeout)
+                {
+                    Assert.Fail("Timed out waiting for pub/sub to work");
+                }
+                var jsonReceived = task.Result;
+                var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+                objectReceived
+                    .ShouldBeEquivalentTo(messageToSend);
+                task = tcs2.Task;
+                result = await task.Timeout(5.Seconds());
+                if (result == Result.Timeout)
+                {
+                    Assert.Fail("Timed out waiting for pub/sub to work");
+                }
+                jsonReceived = task.Result;
+                objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+                objectReceived
+                    .ShouldBeEquivalentTo(messageToSend);
+            }
+            finally
+            {
+                secondConnection.Disconnect().Wait();
+            }
+        }
+
+        [Test]
         public async Task Subscribe_wildcard_channel()
         {
             // arrange
