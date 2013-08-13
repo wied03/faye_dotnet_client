@@ -16,6 +16,7 @@ using FluentAssertions;
 using MsBw.MsBwUtility.Enum;
 using MsbwTest;
 using Newtonsoft.Json;
+using Nito.AsyncEx;
 using NUnit.Framework;
 
 #endregion
@@ -61,7 +62,7 @@ namespace Bsw.FayeDotNet.Test.Client
         {
             if (_connection != null)
             {
-                _connection.Disconnect().Wait();
+                AsyncContext.Run(() => _connection.Disconnect());
             }
             if (_fayeServerProcess.Started)
             {
@@ -97,20 +98,6 @@ namespace Bsw.FayeDotNet.Test.Client
                     supportedConnectionTypes
                 };
             return JsonConvert.SerializeObject(new[] {response});
-        }
-
-        private static string GetConnectResponse(string clientId,bool successful = true, string error = null)
-        {
-            var response =
-                new
-                {
-                    channel = MetaChannels.Connect.StringValue(),
-                    version = HandshakeRequestMessage.BAYEUX_VERSION_1,
-                    successful,
-                    error,
-                    clientId
-                };
-            return JsonConvert.SerializeObject(new[] { response });
         }
 
         #endregion

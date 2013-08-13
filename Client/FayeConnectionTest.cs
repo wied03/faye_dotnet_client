@@ -13,6 +13,7 @@ using FluentAssertions;
 using MsBw.MsBwUtility.Tasks;
 using MsbwTest;
 using Newtonsoft.Json;
+using Nito.AsyncEx;
 using NUnit.Framework;
 
 #endregion
@@ -23,7 +24,7 @@ namespace Bsw.FayeDotNet.Test.Client
     public class FayeConnectionTest : BaseTest
     {
         private const string TEST_SERVER_URL = "ws://localhost:8132/bayeux";
-        protected const int THIN_SERVER_PORT = 8132;
+        private const int THIN_SERVER_PORT = 8132;
 
         #region Test Fields
 
@@ -61,7 +62,7 @@ namespace Bsw.FayeDotNet.Test.Client
         {
             if (_connection != null)
             {
-                _connection.Disconnect().Wait();
+                AsyncContext.Run(() => _connection.Disconnect());
             }
             if (_fayeServerProcess.Started)
             {
