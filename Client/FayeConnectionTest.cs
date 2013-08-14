@@ -205,6 +205,7 @@ namespace Bsw.FayeDotNet.Test.Client
             var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
             objectReceived
                 .ShouldBeEquivalentTo(messageToSend);
+            Console.WriteLine("Got to end of test");
         }
 
         [Test]
@@ -421,7 +422,7 @@ namespace Bsw.FayeDotNet.Test.Client
 
             // act + assert
             var exception = await _connection.InvokingAsync(s => s.Subscribe(channel: reservedChannelName,
-                                                                             messageReceived: dummyAction))
+                                                                             messageReceivedAction: dummyAction))
                                              .ShouldThrow<SubscriptionException>();
             exception.Message
                      .Should()
