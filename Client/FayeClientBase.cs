@@ -1,17 +1,15 @@
 ﻿#region
 
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.FayeDotNet.Serialization;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Enum;
 using MsBw.MsBwUtility.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using NLog;
 using SuperSocket.ClientEngine;
-using WebSocket4Net;
 
 #endregion
 
@@ -20,27 +18,35 @@ namespace Bsw.FayeDotNet.Client
     public abstract class FayeClientBase
     {
         internal const string ONLY_SUPPORTED_CONNECTION_TYPE = "websocket";
+        internal const string CONNECTION_TYPE_ERROR_FORMAT =
+            "We only support 'websocket' and the server only supports [{0}] so we cannot communicate";
         private readonly IWebSocket _socket;
         protected readonly FayeJsonConverter Converter;
         protected int MessageCounter;
-        protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         // 10 seconds
         private static readonly TimeSpan DefaultHandshakeTimeout = new TimeSpan(0,
                                                                                 0,
                                                                                 10);
 
+        private readonly Logger _logger;
+
         protected FayeClientBase(IWebSocket socket,
-                                 int messageCounter)
+                                 int messageCounter,
+                                 Logger logger)
             : this(socket,
                    messageCounter,
-                   DefaultHandshakeTimeout)
+                   DefaultHandshakeTimeout,
+                   logger)
         {
         }
 
         protected FayeClientBase(IWebSocket socket,
                                  int messageCounter,
-                                 TimeSpan handshakeTimeout)
+                                 TimeSpan handshakeTimeout,
+                                 Logger logger)
         {
+            _logger = logger;
             _socket = socket;
             Converter = new FayeJsonConverter();
             MessageCounter = messageCounter;
@@ -55,7 +61,14 @@ namespace Bsw.FayeDotNet.Client
                                                     connectionType: ONLY_SUPPORTED_CONNECTION_TYPE,
                                                     id: MessageCounter++);
             var json = Converter.Serialize(message);
-            _socket.Send(json);
+            SocketSend(json);
+        }
+
+        protected void SocketSend(string data)
+        {
+            _logger.Debug("Sending message '{0}'",
+                         data);
+            _socket.Send(data);
         }
 
         private static TimeSpan FromMilliSecondsStr(string milliseconds)
@@ -68,12 +81,39 @@ namespace Bsw.FayeDotNet.Client
                                 ms);
         }
 
-        protected static Advice ParseAdvice(MessageReceivedEventArgs e)
+        internal async Task<HandshakeResponseMessage> Handshake()
         {
-            var array = JsonConvert.DeserializeObject<JArray>(e.Message);
-            dynamic receivedAnonObj = array[0];
-            if (receivedAnonObj.advice == null) return null;
-            var advice = receivedAnonObj.advice;
+            var message = new HandshakeRequestMessage(supportedConnectionTypes: new[] { ONLY_SUPPORTED_CONNECTION_TYPE },
+                                                      id: MessageCounter++);
+            HandshakeResponseMessage result;
+            try
+            {
+                result = await ExecuteSynchronousMessage<HandshakeResponseMessage>(message,
+                                                                                   HandshakeTimeout);
+            }
+            catch (TimeoutException)
+            {
+                throw new HandshakeException(HandshakeTimeout);
+            }
+            if (!result.Successful) throw new HandshakeException(result.Error);
+            if (result.SupportedConnectionTypes.Contains(ONLY_SUPPORTED_CONNECTION_TYPE)) return result;
+            var flatTypes = result
+                .SupportedConnectionTypes
+                .Select(ct => "'" + ct + "'")
+                .Aggregate((c1,
+                            c2) => c1 + "," + c2);
+            var error = string.Format(CONNECTION_TYPE_ERROR_FORMAT,
+                                      flatTypes);
+            throw new HandshakeException(error);
+        }
+
+        protected abstract Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
+                                                                TimeSpan timeoutValue) where T : BaseFayeMessage;
+
+        protected static Advice ParseAdvice(dynamic message)
+        {
+            if (message.advice == null) return null;
+            var advice = message.advice;
             var timeout = FromMilliSecondsStr((string) advice.timeout);
             var interval = FromMilliSecondsStr((string) advice.interval);
             var reconnect = ((string) advice.reconnect).EnumValue<Reconnect>();
@@ -84,7 +124,7 @@ namespace Bsw.FayeDotNet.Client
 
         protected async Task OpenWebSocket()
         {
-            Logger.Debug("Connecting to websocket");
+            _logger.Debug("Connecting to websocket");
             var tcs = new TaskCompletionSource<bool>();
             EventHandler socketOnOpened = (sender,
                                            args) => tcs.SetResult(true);
@@ -118,7 +158,7 @@ namespace Bsw.FayeDotNet.Client
                 _socket.Error -= socketOnError;
                 _socket.Opened -= socketOnOpened;
             }
-            Logger.Debug("Connected to websocket");
+            _logger.Debug("Connected to websocket");
         }
     }
 }

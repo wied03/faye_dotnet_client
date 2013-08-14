@@ -15,7 +15,7 @@ namespace Bsw.FayeDotNet.Client
         Task Disconnect();
 
         Task Subscribe(string channel,
-                       Action<string> messageReceived);
+                       Action<string> messageReceivedAction);
 
         Task Unsubscribe(string channel);
 
