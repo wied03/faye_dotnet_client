@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NLog;
 using WebSocket4Net;
 
@@ -70,12 +72,7 @@ namespace Bsw.FayeDotNet.Client
         private void SocketMessageReceived(object sender,
                                            MessageReceivedEventArgs e)
         {
-            var baseMessage = Converter.Deserialize<BaseFayeMessage>(e.Message);
-            if (_synchronousMessageEvents.ContainsKey(baseMessage.Id))
-            {
-                _synchronousMessageEvents[baseMessage.Id].SetResult(e);
-                return;
-            }
+            if (HandleSynchronousReply(e)) return;
             var message = Converter.Deserialize<DataMessage>(e.Message);
             var channel = message.Channel;
             var messageData = message.Data.ToString(CultureInfo.InvariantCulture);
@@ -83,6 +80,17 @@ namespace Bsw.FayeDotNet.Client
                          channel,
                          messageData);
             _subscribedChannels[channel].ForEach(handler => handler(messageData));
+        }
+
+        private bool HandleSynchronousReply(MessageReceivedEventArgs e)
+        {
+            var array = JsonConvert.DeserializeObject<JArray>(e.Message);
+            dynamic receivedAnonObj = array[0];
+            int messageId = receivedAnonObj.id;
+            bool isControlMessage = receivedAnonObj.data == null;
+            if (!isControlMessage || !_synchronousMessageEvents.ContainsKey(messageId)) return false;
+            _synchronousMessageEvents[messageId].SetResult(e);
+            return true;
         }
 
         public async Task Disconnect()
