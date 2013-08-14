@@ -155,7 +155,7 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public async Task Connect_lost_connection_retry_happens_properly()
+        public async Task Connect_lost_connection_comes_back_before_publish()
         {
             // port 8133
             const int inputPort = THIN_SERVER_PORT + 1;
@@ -176,9 +176,22 @@ namespace Bsw.FayeDotNet.Test.Client
             await _connection.Subscribe(channelName,
                                         tcs.SetResult);
             var json = JsonConvert.SerializeObject(messageToSend);
-            _socatInterceptor.Kill();
-            _socatInterceptor = StartWritableSocket(hostname: "localhost",
-                                                    inputPort: inputPort);
+            var lostTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionLost += (sender,
+                                           args) => lostTcs.SetResult(true);
+            var backTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionReestablished += (sender,
+                                                    args) => backTcs.SetResult(true);
+            Task.Factory.StartNew(() =>
+                                  {
+                                      _socatInterceptor.Kill();
+                                      _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                                              inputPort: inputPort);
+                                  });
+            await lostTcs.Task.WithTimeout(t => t,
+                                           20.Seconds());
+            await backTcs.Task.WithTimeout(t => t,
+                                           20.Seconds());
             await _connection.Publish(channel: channelName,
                                       message: json);
             // assert
@@ -192,6 +205,29 @@ namespace Bsw.FayeDotNet.Test.Client
             var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
             objectReceived
                 .ShouldBeEquivalentTo(messageToSend);
+        }
+
+        [Test]
+        public async Task Connect_lost_connection_comes_back_after_publish()
+        {
+            // arrange
+
+            // act
+
+            // assert
+            Assert.Fail("write test");
+        }
+
+        [Test]
+        public async Task Connect_lost_connection_retry_not_allowed()
+        {
+            // arrange
+            // make sure the server returns advice reconnect none
+
+            // act
+
+            // assert
+            Assert.Fail("write test");
         }
 
         private class TestMsg
