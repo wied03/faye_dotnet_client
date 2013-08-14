@@ -73,7 +73,7 @@ namespace Bsw.FayeDotNet.Test.Client
                 {
                     _fayeServerProcess.GracefulShutdown();
                 }
-                if (_socatInterceptor != null)
+                if (_socatInterceptor != null && !_socatInterceptor.HasExited)
                 {
                     _socatInterceptor.Kill();
                 }
@@ -176,10 +176,9 @@ namespace Bsw.FayeDotNet.Test.Client
             await _connection.Subscribe(channelName,
                                         tcs.SetResult);
             var json = JsonConvert.SerializeObject(messageToSend);
-            // TODO: Uncomment these once this test passes without killing the interceptor
-            //socatInterceptor.Kill();
-            //socatInterceptor = StartWritableSocket(hostname: "localhost",
-            //                                       inputPort: inputPort);
+            _socatInterceptor.Kill();
+            _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                    inputPort: inputPort);
             await _connection.Publish(channel: channelName,
                                       message: json);
             // assert
@@ -193,8 +192,6 @@ namespace Bsw.FayeDotNet.Test.Client
             var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
             objectReceived
                 .ShouldBeEquivalentTo(messageToSend);
-
-            Assert.Fail("Get this test working without killing/restarting socat and then uncomment the 2 lines above.  It won't pass until Publish_to_channel_we_subscribed_to passes");
         }
 
         private class TestMsg
