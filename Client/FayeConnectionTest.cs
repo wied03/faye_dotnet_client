@@ -10,6 +10,7 @@ using Bsw.FayeDotNet.Client;
 using Bsw.RubyExecution;
 using Bsw.WebSocket4NetSslExt.Socket;
 using FluentAssertions;
+using MsBw.MsBwUtility.JetBrains.Annotations;
 using MsBw.MsBwUtility.Tasks;
 using MsbwTest;
 using Newtonsoft.Json;
@@ -182,6 +183,7 @@ namespace Bsw.FayeDotNet.Test.Client
             var backTcs = new TaskCompletionSource<bool>();
             _connection.ConnectionReestablished += (sender,
                                                     args) => backTcs.SetResult(true);
+// ReSharper disable once CSharpWarnings::CS4014
             Task.Factory.StartNew(() =>
                                   {
                                       _socatInterceptor.Kill();
@@ -209,7 +211,7 @@ namespace Bsw.FayeDotNet.Test.Client
         }
 
         [Test]
-        public async Task Connect_lost_connection_comes_back_after_publish()
+        public async Task Connect_lost_connection_comes_back_after_attempt_to_publish()
         {
             // arrange
 
@@ -233,6 +235,7 @@ namespace Bsw.FayeDotNet.Test.Client
 
         private class TestMsg
         {
+            [UsedImplicitly]
             public string Stuff { get; set; }
         }
 
