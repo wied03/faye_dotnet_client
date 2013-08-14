@@ -38,11 +38,6 @@ namespace Bsw.FayeDotNet.Client
         public event ConnectionEvent ConnectionLost;
         public event ConnectionEvent ConnectionReestablished;
 
-        // 10 seconds
-        private static readonly TimeSpan StandardCommandTimeout = new TimeSpan(0,
-                                                                               0,
-                                                                               10);
-
         // 5 seconds
         private static readonly TimeSpan RetryTimeout = new TimeSpan(0,
                                                                      0,
@@ -102,6 +97,12 @@ namespace Bsw.FayeDotNet.Client
                 ConnectionReestablished(this,
                                         new EventArgs());
             }
+        }
+
+        private async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message) where T : BaseFayeMessage
+        {
+            return await ExecuteSynchronousMessage<T>(message: message,
+                                                      timeoutValue: _advice.Timeout);
         }
 
         protected override async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
@@ -173,9 +174,7 @@ namespace Bsw.FayeDotNet.Client
             _socket.Closed -= SocketClosed;
             var disconnectMessage = new DisconnectRequestMessage(clientId: ClientId,
                                                                  id: MessageCounter++);
-            var disconResult = await ExecuteSynchronousMessage<DisconnectResponseMessage>(message: disconnectMessage,
-                                                                                          timeoutValue:
-                                                                                              StandardCommandTimeout);
+            var disconResult = await ExecuteSynchronousMessage<DisconnectResponseMessage>(message: disconnectMessage);
             if (!disconResult.Successful)
             {
                 throw new NotImplementedException();
@@ -220,10 +219,7 @@ namespace Bsw.FayeDotNet.Client
                                                          subscriptionChannel: channel,
                                                          id: MessageCounter++);
 
-            var result = await ExecuteSynchronousMessage<SubscriptionResponseMessage>(message: message,
-                                                                                      timeoutValue:
-                                                                                          StandardCommandTimeout);
-
+            var result = await ExecuteSynchronousMessage<SubscriptionResponseMessage>(message: message);
             if (!result.Successful) throw new SubscriptionException(result.Error);
         }
 
@@ -260,10 +256,7 @@ namespace Bsw.FayeDotNet.Client
                                                         subscriptionChannel: channel,
                                                         id: MessageCounter++);
 
-            var result = await ExecuteSynchronousMessage<UnsubscribeResponseMessage>(message: message,
-                                                                                     timeoutValue:
-                                                                                         StandardCommandTimeout);
-
+            var result = await ExecuteSynchronousMessage<UnsubscribeResponseMessage>(message: message);
             if (!result.Successful) throw new SubscriptionException(result.Error);
             _subscribedChannels.Remove(channel);
         }
@@ -278,8 +271,7 @@ namespace Bsw.FayeDotNet.Client
                                       clientId: ClientId,
                                       data: message,
                                       id: MessageCounter++);
-            var result = await ExecuteSynchronousMessage<PublishResponseMessage>(message: msg,
-                                                                                 timeoutValue: StandardCommandTimeout);
+            var result = await ExecuteSynchronousMessage<PublishResponseMessage>(message: msg);
             if (!result.Successful)
             {
                 throw new PublishException(result.Error);
