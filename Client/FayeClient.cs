@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
-using NLog;
-using SuperSocket.ClientEngine;
 using WebSocket4Net;
 
 #endregion
@@ -27,22 +25,19 @@ namespace Bsw.FayeDotNet.Client
         private const int FIRST_MESSAGE_INDEX = 1;
         private readonly IWebSocket _socket;
         private Advice _advice;
+
         private static readonly Advice DefaultAdvice = new Advice(reconnect: Reconnect.Retry,
                                                                   interval: new TimeSpan(0),
-                                                                  timeout: new TimeSpan(0, 0, 60));
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+                                                                  timeout: new TimeSpan(0,
+                                                                                        0,
+                                                                                        60));
 
         public FayeClient(IWebSocket socket) : base(socket: socket,
                                                     messageCounter: FIRST_MESSAGE_INDEX)
         {
             _socket = socket;
-            HandshakeTimeout = new TimeSpan(0,
-                                            0,
-                                            10);
             _advice = DefaultAdvice;
         }
-
-        public TimeSpan HandshakeTimeout { get; set; }
 
         public async Task<IFayeConnection> Connect()
         {
@@ -52,7 +47,8 @@ namespace Bsw.FayeDotNet.Client
             return new FayeConnection(socket: _socket,
                                       handshakeResponse: handshakeResponse,
                                       messageCounter: MessageCounter,
-                                      advice: _advice);
+                                      advice: _advice,
+                                      handshakeTimeout: HandshakeTimeout);
         }
 
         private async Task<HandshakeResponseMessage> Handshake()
@@ -79,45 +75,6 @@ namespace Bsw.FayeDotNet.Client
             var error = string.Format(CONNECTION_TYPE_ERROR_FORMAT,
                                       flatTypes);
             throw new HandshakeException(error);
-        }
-
-        private async Task OpenWebSocket()
-        {
-            Logger.Debug("Connecting to websocket");
-            var tcs = new TaskCompletionSource<bool>();
-            EventHandler socketOnOpened = (sender,
-                                           args) => tcs.SetResult(true);
-            _socket.Opened += socketOnOpened;
-            Exception exception = null;
-            EventHandler<ErrorEventArgs> socketOnError = (sender,
-                                                          args) =>
-                                                         {
-                                                             exception = args.Exception;
-                                                             tcs.SetResult(false);
-                                                         };
-            _socket.Error += socketOnError;
-            _socket.Open();
-            var task = tcs.Task;
-            var result = await task.Timeout(HandshakeTimeout);
-            try
-            {
-                if (result == Result.Timeout)
-                {
-                    var error = string.Format("Timed out, waited {0} milliseconds to connect via websockets",
-                                              HandshakeTimeout.TotalMilliseconds);
-                    throw new FayeConnectionException(error);
-                }
-                if (!task.Result)
-                {
-                    throw exception;
-                }
-            }
-            finally
-            {
-                _socket.Error -= socketOnError;
-                _socket.Opened -= socketOnOpened;
-            }
-            Logger.Debug("Connected to websocket");
         }
 
         private async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,

@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 
 namespace Bsw.FayeDotNet.Client
 {
+    public delegate void ConnectionEvent(object sender, EventArgs args);
+
     public interface IFayeConnection
     {
         /// <summary>
@@ -19,5 +21,9 @@ namespace Bsw.FayeDotNet.Client
 
         Task Publish(string channel,
                      string message);
+
+        event ConnectionEvent ConnectionLost;
+
+        event ConnectionEvent ConnectionReestablished;
     }
 }

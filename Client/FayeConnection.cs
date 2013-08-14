@@ -5,13 +5,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NLog;
 using WebSocket4Net;
 
 #endregion
@@ -32,11 +32,18 @@ namespace Bsw.FayeDotNet.Client
         private readonly IWebSocket _socket;
         private readonly Dictionary<string, List<Action<string>>> _subscribedChannels;
         private readonly Dictionary<int, TaskCompletionSource<MessageReceivedEventArgs>> _synchronousMessageEvents;
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        public event ConnectionEvent ConnectionLost;
+        public event ConnectionEvent ConnectionReestablished;
 
         private static readonly TimeSpan StandardCommandTimeout = new TimeSpan(0,
                                                                                0,
                                                                                10);
+
+        // 5 seconds
+        private static readonly TimeSpan RetryTimeout = new TimeSpan(0,
+                                                                     0,
+                                                                     5);
+
         private Advice _advice;
 
         public string ClientId { get; private set; }
@@ -44,8 +51,10 @@ namespace Bsw.FayeDotNet.Client
         public FayeConnection(IWebSocket socket,
                               HandshakeResponseMessage handshakeResponse,
                               int messageCounter,
-                              Advice advice) : base(socket: socket,
-                                                    messageCounter: messageCounter)
+                              Advice advice,
+                              TimeSpan handshakeTimeout) : base(socket: socket,
+                                                                messageCounter: messageCounter,
+                                                                handshakeTimeout: handshakeTimeout)
         {
             _socket = socket;
             ClientId = handshakeResponse.ClientId;
@@ -53,6 +62,27 @@ namespace Bsw.FayeDotNet.Client
             _subscribedChannels = new Dictionary<string, List<Action<string>>>();
             _synchronousMessageEvents = new Dictionary<int, TaskCompletionSource<MessageReceivedEventArgs>>();
             _advice = advice;
+            _socket.Closed += SocketClosed;
+        }
+
+        private void SocketClosed(object sender,
+                                  EventArgs e)
+        {
+            if (ConnectionLost != null)
+            {
+                ConnectionLost(this,
+                               new EventArgs());
+            }
+            Task.Factory.StartNew(() =>
+                                  {
+                                      Thread.Sleep(RetryTimeout);
+                                      OpenWebSocket().Wait();
+                                      if (ConnectionReestablished != null)
+                                      {
+                                          ConnectionReestablished(this,
+                                                                  new EventArgs());
+                                      }
+                                  });
         }
 
         private async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
@@ -108,6 +138,8 @@ namespace Bsw.FayeDotNet.Client
                 throw new FayeConnectionException(ALREADY_DISCONNECTED);
             }
             Logger.Info("Disconnecting from FAYE server");
+            // We don't need the retry handler anymore
+            _socket.Closed -= SocketClosed;
             var disconnectMessage = new DisconnectRequestMessage(clientId: ClientId,
                                                                  id: MessageCounter++);
             var disconResult = await ExecuteSynchronousMessage<DisconnectResponseMessage>(message: disconnectMessage,
