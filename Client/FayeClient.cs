@@ -26,6 +26,10 @@ namespace Bsw.FayeDotNet.Client
 
         private const int FIRST_MESSAGE_INDEX = 1;
         private readonly IWebSocket _socket;
+        private Advice _advice;
+        private static readonly Advice DefaultAdvice = new Advice(reconnect: Reconnect.Retry,
+                                                                  interval: new TimeSpan(0),
+                                                                  timeout: new TimeSpan(0, 0, 60));
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public FayeClient(IWebSocket socket) : base(socket: socket,
@@ -35,6 +39,7 @@ namespace Bsw.FayeDotNet.Client
             HandshakeTimeout = new TimeSpan(0,
                                             0,
                                             10);
+            _advice = DefaultAdvice;
         }
 
         public TimeSpan HandshakeTimeout { get; set; }
@@ -46,7 +51,8 @@ namespace Bsw.FayeDotNet.Client
             SendConnect(handshakeResponse.ClientId);
             return new FayeConnection(socket: _socket,
                                       handshakeResponse: handshakeResponse,
-                                      messageCounter: MessageCounter);
+                                      messageCounter: MessageCounter,
+                                      advice: _advice);
         }
 
         private async Task<HandshakeResponseMessage> Handshake()
@@ -130,6 +136,11 @@ namespace Bsw.FayeDotNet.Client
                 throw new TimeoutException();
             }
             _socket.MessageReceived -= received;
+            var newAdvice = ParseAdvice(task.Result);
+            if (newAdvice != null)
+            {
+                _advice = newAdvice;
+            }
             return Converter.Deserialize<T>(task.Result.Message);
         }
     }

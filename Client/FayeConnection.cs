@@ -37,19 +37,22 @@ namespace Bsw.FayeDotNet.Client
         private static readonly TimeSpan StandardCommandTimeout = new TimeSpan(0,
                                                                                0,
                                                                                10);
+        private Advice _advice;
 
         public string ClientId { get; private set; }
 
         public FayeConnection(IWebSocket socket,
                               HandshakeResponseMessage handshakeResponse,
-                              int messageCounter) : base(socket: socket,
-                                                         messageCounter: messageCounter)
+                              int messageCounter,
+                              Advice advice) : base(socket: socket,
+                                                    messageCounter: messageCounter)
         {
             _socket = socket;
             ClientId = handshakeResponse.ClientId;
             _socket.MessageReceived += SocketMessageReceived;
             _subscribedChannels = new Dictionary<string, List<Action<string>>>();
             _synchronousMessageEvents = new Dictionary<int, TaskCompletionSource<MessageReceivedEventArgs>>();
+            _advice = advice;
         }
 
         private async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
@@ -72,6 +75,11 @@ namespace Bsw.FayeDotNet.Client
         private void SocketMessageReceived(object sender,
                                            MessageReceivedEventArgs e)
         {
+            var newAdvice = ParseAdvice(e);
+            if (newAdvice != null)
+            {
+                _advice = newAdvice;
+            }
             if (HandleSynchronousReply(e)) return;
             var message = Converter.Deserialize<DataMessage>(e.Message);
             var channel = message.Channel;
