@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Transports;
 using Bsw.RubyExecution;
@@ -27,6 +28,11 @@ namespace Bsw.FayeDotNet.Test.Transports
         private const string TEST_SERVER_URL = "ws://localhost:8132/bayeux";
         private const int THIN_SERVER_PORT = 8132;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        private static readonly Object TestMessage =
+            new {channel = "/meta/handshake", version = "1.0", supportedConnectionTypes = new[] {"websocket"}};
+
+        private static readonly string TestMessageStr = JsonConvert.SerializeObject(TestMessage);
 
         #region Test Fields
 
@@ -139,16 +145,106 @@ namespace Bsw.FayeDotNet.Test.Transports
             var tcs = new TaskCompletionSource<string>();
             _connection.MessageReceived += (sender,
                                             args) => tcs.SetResult(args.Message);
-            var testMessage =
-                new {channel = "/meta/handshake", version = "1.0", supportedConnectionTypes = new[] {"websocket"}};
-            var testMessageStr = JsonConvert.SerializeObject(testMessage);
-
             // act
-            _connection.Send(testMessageStr);
+            _connection.Send(TestMessageStr);
             var response = await tcs.Task.WithTimeout(s => s,
                                                       5.Seconds());
 
             // assert
+            dynamic responseObj = JsonConvert.DeserializeObject<JArray>(response)[0];
+            bool successful = responseObj.successful;
+            successful
+                .Should()
+                .BeTrue();
+        }
+
+        [Test]
+        public async Task Connection_dies_reestablishes_before_message_send()
+        {
+            // arrange
+            const int inputPort = THIN_SERVER_PORT + 1;
+            _fayeServerProcess.StartThinServer();
+            _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                    inputPort: inputPort);
+            const string urlThroughSocat = "ws://localhost:8133/bayeux";
+            var socket = new WebSocketClient(uri: urlThroughSocat);
+            SetupWebSocket(socket);
+            InstantiateTransportClient();
+            _connection = await _client.Connect();
+            var tcs = new TaskCompletionSource<string>();
+            _connection.MessageReceived += (sender,
+                                            args) => tcs.SetResult(args.Message);
+            var lostTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionLost += (sender,
+                                           args) => lostTcs.SetResult(true);
+            var backTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionReestablished += (sender,
+                                                    args) => backTcs.SetResult(true);
+            // act
+            // ReSharper disable once CSharpWarnings::CS4014
+            Task.Factory.StartNew(() =>
+                                  {
+                                      _socatInterceptor.Kill();
+                                      _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                                              inputPort: inputPort);
+                                  });
+            await lostTcs.Task.WithTimeout(t => t,
+                                           20.Seconds());
+            await backTcs.Task.WithTimeout(t => t,
+                                           20.Seconds());
+            _connection.Send(TestMessageStr);
+            var response = await tcs.Task.WithTimeout(s => s,
+                                                      5.Seconds());
+
+            // assert
+            dynamic responseObj = JsonConvert.DeserializeObject<JArray>(response)[0];
+            bool successful = responseObj.successful;
+            successful
+                .Should()
+                .BeTrue();
+        }
+
+        [Test]
+        public async Task Connection_dies_reestablishes_after_message_send()
+        {
+            // arrange
+            const int inputPort = THIN_SERVER_PORT + 1;
+            _fayeServerProcess.StartThinServer();
+            _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                    inputPort: inputPort);
+            const string urlThroughSocat = "ws://localhost:8133/bayeux";
+            var socket = new WebSocketClient(uri: urlThroughSocat);
+            SetupWebSocket(socket);
+            InstantiateTransportClient();
+            _connection = await _client.Connect();
+            var tcs = new TaskCompletionSource<string>();
+            _connection.MessageReceived += (sender,
+                                            args) => tcs.SetResult(args.Message);
+            var lostTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionLost += (sender,
+                                           args) => lostTcs.SetResult(true);
+
+            // act
+            // ReSharper disable once CSharpWarnings::CS4014
+            Task.Factory.StartNew(() =>
+                                  {
+                                      Logger.Info("Killing socat");
+                                      _socatInterceptor.Kill();
+                                      Logger.Info("Sleeping");
+                                      Thread.Sleep(5.Seconds());
+                                      Logger.Info("Restarting socat");
+                                      _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                                              inputPort: inputPort);
+                                  });
+            Logger.Info("Waiting for websocket to acknowledge disconnect");
+            await lostTcs.Task.WithTimeout(t => t,
+                                           20.Seconds());
+            Logger.Info("Disconnect acknowledged, sending message");
+            _connection.Send(TestMessageStr);
+
+            // assert
+            var response = await tcs.Task.WithTimeout(s => s,
+                                                      15.Seconds());
             dynamic responseObj = JsonConvert.DeserializeObject<JArray>(response)[0];
             bool successful = responseObj.successful;
             successful

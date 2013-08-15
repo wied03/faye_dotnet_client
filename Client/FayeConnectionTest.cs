@@ -174,11 +174,6 @@ namespace Bsw.FayeDotNet.Test.Client
             var tcs = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
             var messageToSend = new TestMsg {Stuff = "the message"};
-
-            // act
-
-            await _connection.Subscribe(channelName,
-                                        tcs.SetResult);
             var json = JsonConvert.SerializeObject(messageToSend);
             var lostTcs = new TaskCompletionSource<bool>();
             _connection.ConnectionLost += (sender,
@@ -186,6 +181,11 @@ namespace Bsw.FayeDotNet.Test.Client
             var backTcs = new TaskCompletionSource<bool>();
             _connection.ConnectionReestablished += (sender,
                                                     args) => backTcs.SetResult(true);
+
+            // act
+
+            await _connection.Subscribe(channelName,
+                                        tcs.SetResult);
 // ReSharper disable once CSharpWarnings::CS4014
             Task.Factory.StartNew(() =>
                                   {
@@ -228,14 +228,15 @@ namespace Bsw.FayeDotNet.Test.Client
             var tcs = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
             var messageToSend = new TestMsg { Stuff = "the message" };
+            var lostTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionLost += (sender,
+                                           args) => lostTcs.SetResult(true);
 
             // act
             await _connection.Subscribe(channelName,
                                         tcs.SetResult);
             var json = JsonConvert.SerializeObject(messageToSend);
-            var lostTcs = new TaskCompletionSource<bool>();
-            _connection.ConnectionLost += (sender,
-                                           args) => lostTcs.SetResult(true);
+            
             // ReSharper disable once CSharpWarnings::CS4014
             Task.Factory.StartNew(() =>
             {
