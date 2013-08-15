@@ -149,7 +149,7 @@ namespace Bsw.FayeDotNet.Client
 
         public async Task Disconnect()
         {
-            if (_connection.Closed)
+            if (_connection.ConnectionState == ConnectionState.Disconnected)
             {
                 throw new FayeConnectionException(ALREADY_DISCONNECTED);
             }

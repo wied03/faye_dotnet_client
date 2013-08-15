@@ -1,6 +1,8 @@
 ﻿#region
 
 using System;
+using System.CodeDom;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -19,6 +21,8 @@ namespace Bsw.FayeDotNet.Transports
     {
         private const string ALREADY_DISCONNECTED = "Already disconnected";
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly Queue<string> _outgoingMessageQueue;
+        private readonly object _connectionStateMutex;
 
         // 5 seconds
         private static readonly TimeSpan DefaultRetryTimeout = new TimeSpan(0,
@@ -31,12 +35,18 @@ namespace Bsw.FayeDotNet.Transports
             Socket.MessageReceived += WebSocketMessageReceived;
             Socket.Closed += WebSocketClosed;
             RetryTimeout = DefaultRetryTimeout;
-            Closed = false;
+            ConnectionState = ConnectionState.Connected;
+            _outgoingMessageQueue = new Queue<string>();
+            _connectionStateMutex = new object();
         }
 
         private void WebSocketClosed(object sender,
                                      EventArgs e)
         {
+            lock (_connectionStateMutex)
+            {
+                ConnectionState = ConnectionState.Lost;
+            }
             Logger.Info("Lost connection, retrying in {0} milliseconds",
                         RetryTimeout.TotalMilliseconds);
             if (ConnectionLost != null)
@@ -44,7 +54,6 @@ namespace Bsw.FayeDotNet.Transports
                 ConnectionLost(this,
                                new EventArgs());
             }
-            Closed = true;
             Task.Factory.StartNew(() => ReestablishConnection().Wait());
         }
 
@@ -52,12 +61,40 @@ namespace Bsw.FayeDotNet.Transports
         {
             Thread.Sleep(RetryTimeout);
             Logger.Info("Retrying connection");
+            lock (_connectionStateMutex)
+            {
+                ConnectionState = ConnectionState.Reconnecting;
+            }
             await ConnectWebsocket();
-            Closed = false;
+            lock (_connectionStateMutex)
+            {
+                ConnectionState = ConnectionState.Connected;
+            }
             if (ConnectionReestablished != null)
             {
                 ConnectionReestablished(this,
                                         new EventArgs());
+            }
+            SendQueuedMessages();
+        }
+
+        private void SendQueuedMessages()
+        {
+            Logger.Info("Sending queued messages from when connection was lost");
+            while (true)
+            {
+                string message;
+                try
+                {
+                    // wait to dequeue until we successfully send the message
+                    message = _outgoingMessageQueue.Peek();
+                }
+                catch (InvalidOperationException)
+                {
+                    break;
+                }
+                Send(message);
+                _outgoingMessageQueue.Dequeue();
             }
         }
 
@@ -77,7 +114,18 @@ namespace Bsw.FayeDotNet.Transports
         {
             Logger.Debug("Sending message '{0}'",
                          message);
-            Socket.Send(message);
+            lock (_connectionStateMutex)
+            {
+                if (ConnectionState == ConnectionState.Lost || ConnectionState == ConnectionState.Reconnecting)
+                {
+                    Logger.Debug("Connection was lost, queuing message");
+                    _outgoingMessageQueue.Enqueue(message);
+                }
+                else
+                {
+                    Socket.Send(message);
+                }
+            }
         }
 
         public async Task Disconnect()
@@ -95,13 +143,16 @@ namespace Bsw.FayeDotNet.Transports
             Socket.Closed += closed;
             Socket.Close("Disconnection Requested");
             await tcs.Task;
-            Closed = true;
+            lock (_connectionStateMutex)
+            {
+                ConnectionState = ConnectionState.Disconnected;
+            }
         }
 
         public event MessageReceived MessageReceived;
         public event ConnectionEvent ConnectionLost;
         public event ConnectionEvent ConnectionReestablished;
         public TimeSpan RetryTimeout { get; set; }
-        public bool Closed { get; private set; }
+        public ConnectionState ConnectionState { get; private set; }
     }
 }

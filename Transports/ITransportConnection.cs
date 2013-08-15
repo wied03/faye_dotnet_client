@@ -23,6 +23,14 @@ namespace Bsw.FayeDotNet.Transports
     public delegate void MessageReceived(object sender,
                                          MessageReceivedArgs args);
 
+    public enum ConnectionState
+    {
+        Connected,
+        Disconnected,
+        Lost,
+        Reconnecting
+    }
+
     public interface ITransportConnection
     {
         /// <summary>
@@ -44,6 +52,6 @@ namespace Bsw.FayeDotNet.Transports
 
         TimeSpan RetryTimeout { get; set; }
 
-        bool Closed { get; }
+        ConnectionState ConnectionState { get; }
     }
 }
