@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Client;
 using Bsw.RubyExecution;
@@ -15,6 +16,7 @@ using MsBw.MsBwUtility.Tasks;
 using MsbwTest;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
+using NLog;
 using NUnit.Framework;
 
 #endregion
@@ -26,6 +28,7 @@ namespace Bsw.FayeDotNet.Test.Client
     {
         private const string TEST_SERVER_URL = "ws://localhost:8132/bayeux";
         private const int THIN_SERVER_PORT = 8132;
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         #region Test Fields
 
@@ -207,15 +210,60 @@ namespace Bsw.FayeDotNet.Test.Client
             var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
             objectReceived
                 .ShouldBeEquivalentTo(messageToSend);
-            Console.WriteLine("Got to end of test");
         }
 
         [Test]
         public async Task Connect_lost_connection_comes_back_after_attempt_to_publish()
         {
-            // arrange
+            // arrange// port 8133
+            const int inputPort = THIN_SERVER_PORT + 1;
+            _fayeServerProcess.StartThinServer();
+            _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                    inputPort: inputPort);
+            const string urlThroughSocat = "ws://localhost:8133/bayeux";
+            var socket = new WebSocketClient(uri: urlThroughSocat);
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            var tcs = new TaskCompletionSource<string>();
+            const string channelName = "/somechannel";
+            var messageToSend = new TestMsg { Stuff = "the message" };
 
             // act
+            await _connection.Subscribe(channelName,
+                                        tcs.SetResult);
+            var json = JsonConvert.SerializeObject(messageToSend);
+            var lostTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionLost += (sender,
+                                           args) => lostTcs.SetResult(true);
+            // ReSharper disable once CSharpWarnings::CS4014
+            Task.Factory.StartNew(() =>
+            {
+                Logger.Info("Killing socat");
+                _socatInterceptor.Kill();
+                Logger.Info("Sleeping");
+                Thread.Sleep(5.Seconds());
+                Logger.Info("Restarting socat");
+                _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                        inputPort: inputPort);
+            });
+            Logger.Info("Waiting for websocket to acknowledge disconnect");
+            await lostTcs.Task.WithTimeout(t => t,
+                                           20.Seconds());
+            Logger.Info("Disconnect acknowledged, publishing");
+            await _connection.Publish(channel: channelName,
+                                      message: json);
+            // assert
+            var task = tcs.Task;
+            var result = await task.Timeout(20.Seconds());
+            if (result == Result.Timeout)
+            {
+                Assert.Fail("Timed out waiting for pub/sub to work");
+            }
+            var jsonReceived = task.Result;
+            var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+            objectReceived
+                .ShouldBeEquivalentTo(messageToSend);
 
             // assert
             Assert.Fail("write test");
