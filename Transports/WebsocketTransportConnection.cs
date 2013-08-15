@@ -6,7 +6,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Bsw.FayeDotNet.Client;
 using Bsw.WebSocket4NetSslExt.Socket;
 using NLog;
 using WebSocket4Net;
@@ -18,7 +17,6 @@ namespace Bsw.FayeDotNet.Transports
     public class WebsocketTransportConnection : BaseWebsocket,
                                                 ITransportConnection
     {
-        private const string ALREADY_DISCONNECTED = "Already disconnected";
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly Queue<string> _outgoingMessageQueue;
         private readonly object _connectionStateMutex;
@@ -152,7 +150,9 @@ namespace Bsw.FayeDotNet.Transports
 
         public async Task Disconnect()
         {
-            if (ConnectionState == ConnectionState.Disconnected)
+            var considerDisconnected = (ConnectionState == ConnectionState.Disconnected) ||
+                                       (ConnectionState == ConnectionState.Lost && !RetryEnabled);
+            if (considerDisconnected)
             {
                 Logger.Info("Already disconnected!");
                 return;
