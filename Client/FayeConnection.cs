@@ -5,16 +5,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
-using Bsw.WebSocket4NetSslExt.Socket;
+using Bsw.FayeDotNet.Transports;
 using MsBw.MsBwUtility.Enum;
 using MsBw.MsBwUtility.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
-using WebSocket4Net;
 
 #endregion
 
@@ -31,45 +29,35 @@ namespace Bsw.FayeDotNet.Client
         internal const string NOT_SUBSCRIBED =
             "You cannot unsubscribe from channel '{0}' because you were not subscribed to it first";
 
-        private readonly IWebSocket _socket;
+        private readonly ITransportConnection _connection;
         private readonly Dictionary<string, List<Action<string>>> _subscribedChannels;
-        private readonly Dictionary<int, TaskCompletionSource<MessageReceivedEventArgs>> _synchronousMessageEvents;
+        private readonly Dictionary<int, TaskCompletionSource<MessageReceivedArgs>> _synchronousMessageEvents;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public event ConnectionEvent ConnectionLost;
         public event ConnectionEvent ConnectionReestablished;
-
-        // 5 seconds
-        private static readonly TimeSpan RetryTimeout = new TimeSpan(0,
-                                                                     0,
-                                                                     5);
-
         private Advice _advice;
 
         public string ClientId { get; private set; }
 
-        public FayeConnection(IWebSocket socket,
+        public FayeConnection(ITransportConnection connection,
                               HandshakeResponseMessage handshakeResponse,
                               int messageCounter,
                               Advice advice,
-                              TimeSpan handshakeTimeout) : base(socket: socket,
-                                                                messageCounter: messageCounter,
-                                                                handshakeTimeout: handshakeTimeout,
-                                                                logger: Logger)
+                              TimeSpan handshakeTimeout) : base(messageCounter: messageCounter,
+                                                                handshakeTimeout: handshakeTimeout)
         {
-            _socket = socket;
+            _connection = connection;
             ClientId = handshakeResponse.ClientId;
-            _socket.MessageReceived += SocketMessageReceived;
+            _connection.MessageReceived += SocketMessageReceived;
             _subscribedChannels = new Dictionary<string, List<Action<string>>>();
-            _synchronousMessageEvents = new Dictionary<int, TaskCompletionSource<MessageReceivedEventArgs>>();
+            _synchronousMessageEvents = new Dictionary<int, TaskCompletionSource<MessageReceivedArgs>>();
             _advice = advice;
-            _socket.Closed += SocketClosed;
+            _connection.ConnectionLost += SocketClosed;
         }
 
         private void SocketClosed(object sender,
                                   EventArgs e)
         {
-            Logger.Info("Lost connection, retrying in {0} milliseconds",
-                        RetryTimeout.TotalMilliseconds);
             if (ConnectionLost != null)
             {
                 ConnectionLost(this,
@@ -80,12 +68,10 @@ namespace Bsw.FayeDotNet.Client
 
         private async Task ReestablishConnection()
         {
-            Thread.Sleep(RetryTimeout);
-            Logger.Info("Retrying connection");
-            await OpenWebSocket();
             var handshakeResponse = await Handshake();
             ClientId = handshakeResponse.ClientId;
-            SendConnect(ClientId);
+            SendConnect(ClientId,
+                        _connection);
             Logger.Debug("Re-subscribing to channels");
             foreach (var channel in _subscribedChannels.Keys)
             {
@@ -109,9 +95,9 @@ namespace Bsw.FayeDotNet.Client
                                                                       TimeSpan timeoutValue)
         {
             var json = Converter.Serialize(message);
-            var tcs = new TaskCompletionSource<MessageReceivedEventArgs>();
+            var tcs = new TaskCompletionSource<MessageReceivedArgs>();
             _synchronousMessageEvents[message.Id] = tcs;
-            SocketSend(json);
+            _connection.Send(json);
             var task = tcs.Task;
             var result = await task.Timeout(timeoutValue);
             if (result == Result.Timeout)
@@ -123,7 +109,7 @@ namespace Bsw.FayeDotNet.Client
         }
 
         private void SocketMessageReceived(object sender,
-                                           MessageReceivedEventArgs e)
+                                           MessageReceivedArgs e)
         {
             Logger.Debug("Received raw message '{0}'",
                          e.Message);
@@ -154,7 +140,7 @@ namespace Bsw.FayeDotNet.Client
         }
 
         private bool HandleSynchronousReply(dynamic message,
-                                            MessageReceivedEventArgs e)
+                                            MessageReceivedArgs e)
         {
             int messageId = message.id;
             bool isControlMessage = message.data == null;
@@ -165,13 +151,11 @@ namespace Bsw.FayeDotNet.Client
 
         public async Task Disconnect()
         {
-            if (_socket.State == WebSocketState.Closed)
+            if (_connection.Closed)
             {
                 throw new FayeConnectionException(ALREADY_DISCONNECTED);
             }
             Logger.Info("Disconnecting from FAYE server");
-            // We don't need the retry handler anymore
-            _socket.Closed -= SocketClosed;
             var disconnectMessage = new DisconnectRequestMessage(clientId: ClientId,
                                                                  id: MessageCounter++);
             var disconResult = await ExecuteSynchronousMessage<DisconnectResponseMessage>(message: disconnectMessage);
@@ -179,13 +163,7 @@ namespace Bsw.FayeDotNet.Client
             {
                 throw new NotImplementedException();
             }
-
-            var tcs = new TaskCompletionSource<bool>();
-            EventHandler closed = (sender,
-                                   args) => tcs.SetResult(true);
-            _socket.Closed += closed;
-            _socket.Close("Disconnection Requested");
-            await tcs.Task;
+            await _connection.Disconnect();
         }
 
         public async Task Subscribe(string channel,

@@ -60,9 +60,12 @@
     <Compile Include="Client\FayeConnection.cs" />
     <Compile Include="Client\HandshakeException.cs" />
     <Compile Include="Client\IFayeConnection.cs" />
+    <Compile Include="Transports\BaseWebsocket.cs" />
+    <Compile Include="Transports\ITransportClient.cs" />
     <Compile Include="Client\PublishException.cs" />
     <Compile Include="Client\SubscriptionException.cs" />
     <Compile Include="Client\TimeoutException.cs" />
+    <Compile Include="Client\Transport.cs" />
     <Compile Include="Messages\BaseFayeMessage.cs" />
     <Compile Include="Client\IFayeClient.cs" />
     <Compile Include="Messages\ConnectRequestMessage.cs" />
@@ -80,6 +83,9 @@
     <Compile Include="Messages\UnsubscribeResponseMessage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialization\FayeJsonConverter.cs" />
+    <Compile Include="Transports\ITransportConnection.cs" />
+    <Compile Include="Transports\WebsocketTransportClient.cs" />
+    <Compile Include="Transports\WebsocketTransportConnection.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">
