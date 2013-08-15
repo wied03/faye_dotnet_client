@@ -301,11 +301,39 @@ namespace Bsw.FayeDotNet.Test.Transports
         public async Task Connection_lost_retry_not_enabled()
         {
             // arrange
+            const int inputPort = THIN_SERVER_PORT + 1;
+            _fayeServerProcess.StartThinServer();
+            _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                    inputPort: inputPort);
+            const string urlThroughSocat = "ws://localhost:8133/bayeux";
+            var socket = new WebSocketClient(uri: urlThroughSocat);
+            SetupWebSocket(socket);
+            InstantiateTransportClient();
+            _connection = await _client.Connect();
+            _connection.RetryEnabled = false;
+            var lostTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionLost += (sender,
+                                           args) => lostTcs.SetResult(true);
 
             // act
+            // ReSharper disable once CSharpWarnings::CS4014
+            Task.Factory.StartNew(() =>
+                                  {
+                                      _socatInterceptor.Kill();
+                                      _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                                              inputPort: inputPort);
+                                  });
 
             // assert
-            Assert.Fail("write test");
+            await lostTcs.Task.WithTimeout(s => s,
+                                           5.Seconds());
+            _connection.ConnectionState
+                       .Should()
+                       .Be(ConnectionState.Lost);
+            await Task.Delay(5.Seconds());
+            _connection.ConnectionState
+                       .Should()
+                       .Be(ConnectionState.Lost);
         }
 
         #endregion
