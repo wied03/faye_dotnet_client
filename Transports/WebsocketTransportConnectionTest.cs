@@ -252,6 +252,62 @@ namespace Bsw.FayeDotNet.Test.Transports
                 .BeTrue();
         }
 
+        [Test]
+        public async Task Expected_server_disconnect()
+        {
+            // arrange
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: TEST_SERVER_URL);
+            SetupWebSocket(socket);
+            InstantiateTransportClient();
+            _connection = await _client.Connect();
+            var handshakeTcs = new TaskCompletionSource<string>();
+            MessageReceived handshakeHandler = (sender,
+                                                args) => handshakeTcs.SetResult(args.Message);
+            _connection.MessageReceived += handshakeHandler;
+            _connection.Send(TestMessageStr);
+            var response = await handshakeTcs.Task.WithTimeout(s => s,
+                                                               5.Seconds());
+            dynamic responseObj = JsonConvert.DeserializeObject<JArray>(response)[0];
+            string clientId = responseObj.clientId;
+            var triggerServerDisconnectMessage =
+                new {channel = "/meta/disconnect", clientId};
+            var disconnectJson = JsonConvert.SerializeObject(triggerServerDisconnectMessage);
+            var disconnectTcs = new TaskCompletionSource<string>();
+            MessageReceived disconnectHandler = (sender,
+                                                 args) => disconnectTcs.SetResult(args.Message);
+            _connection.MessageReceived -= handshakeHandler;
+            _connection.MessageReceived += disconnectHandler;
+            var closedTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionClosed += (sender,
+                                             args) => closedTcs.SetResult(true);
+
+            // act
+            _connection.NotifyOfPendingServerDisconnection();
+            _connection.Send(disconnectJson);
+            await disconnectTcs.Task.WithTimeout(s => s,
+                                                 10.Seconds());
+            await closedTcs.Task.WithTimeout(s => s,
+                                             10.Seconds());
+
+            // assert
+            _connection
+                .ConnectionState
+                .Should()
+                .Be(ConnectionState.Disconnected);
+        }
+
+        [Test]
+        public async Task Connection_lost_retry_not_enabled()
+        {
+            // arrange
+
+            // act
+
+            // assert
+            Assert.Fail("write test");
+        }
+
         #endregion
     }
 }

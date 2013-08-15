@@ -231,12 +231,11 @@ namespace Bsw.FayeDotNet.Test.Client
             var lostTcs = new TaskCompletionSource<bool>();
             _connection.ConnectionLost += (sender,
                                            args) => lostTcs.SetResult(true);
+            var json = JsonConvert.SerializeObject(messageToSend);
 
             // act
             await _connection.Subscribe(channelName,
                                         tcs.SetResult);
-            var json = JsonConvert.SerializeObject(messageToSend);
-            
             // ReSharper disable once CSharpWarnings::CS4014
             Task.Factory.StartNew(() =>
             {
