@@ -90,6 +90,7 @@
     <Compile Include="Client\FayeConnectionTest.cs" />
     <Compile Include="Client\MockSocket.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Transports\WebsocketTransportConnectionTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bsw.FayeDotNet\Bsw.FayeDotNet.csproj">
