@@ -2,7 +2,6 @@
 
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.FayeDotNet.Serialization;
 using Bsw.FayeDotNet.Transports;
@@ -62,35 +61,6 @@ namespace Bsw.FayeDotNet.Client
                                 0,
                                 ms);
         }
-
-        internal async Task<HandshakeResponseMessage> Handshake()
-        {
-            var message = new HandshakeRequestMessage(supportedConnectionTypes: new[] {ONLY_SUPPORTED_CONNECTION_TYPE},
-                                                      id: MessageCounter++);
-            HandshakeResponseMessage result;
-            try
-            {
-                result = await ExecuteSynchronousMessage<HandshakeResponseMessage>(message,
-                                                                                   HandshakeTimeout);
-            }
-            catch (TimeoutException)
-            {
-                throw new HandshakeException(HandshakeTimeout);
-            }
-            if (!result.Successful) throw new HandshakeException(result.Error);
-            if (result.SupportedConnectionTypes.Contains(ONLY_SUPPORTED_CONNECTION_TYPE)) return result;
-            var flatTypes = result
-                .SupportedConnectionTypes
-                .Select(ct => "'" + ct + "'")
-                .Aggregate((c1,
-                            c2) => c1 + "," + c2);
-            var error = string.Format(CONNECTION_TYPE_ERROR_FORMAT,
-                                      flatTypes);
-            throw new HandshakeException(error);
-        }
-
-        protected abstract Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
-                                                                TimeSpan timeoutValue) where T : BaseFayeMessage;
 
         protected static Advice ParseAdvice(dynamic message)
         {

@@ -57,8 +57,34 @@ namespace Bsw.FayeDotNet.Client
                                       handshakeTimeout: HandshakeTimeout);
         }
 
-        protected override async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
-                                                                      TimeSpan timeoutValue)
+        private async Task<HandshakeResponseMessage> Handshake()
+        {
+            var message = new HandshakeRequestMessage(supportedConnectionTypes: new[] {ONLY_SUPPORTED_CONNECTION_TYPE},
+                                                      id: MessageCounter++);
+            HandshakeResponseMessage result;
+            try
+            {
+                result = await ExecuteSynchronousMessage<HandshakeResponseMessage>(message,
+                                                                                   HandshakeTimeout);
+            }
+            catch (TimeoutException)
+            {
+                throw new HandshakeException(HandshakeTimeout);
+            }
+            if (!result.Successful) throw new HandshakeException(result.Error);
+            if (result.SupportedConnectionTypes.Contains(ONLY_SUPPORTED_CONNECTION_TYPE)) return result;
+            var flatTypes = result
+                .SupportedConnectionTypes
+                .Select(ct => "'" + ct + "'")
+                .Aggregate((c1,
+                            c2) => c1 + "," + c2);
+            var error = string.Format(CONNECTION_TYPE_ERROR_FORMAT,
+                                      flatTypes);
+            throw new HandshakeException(error);
+        }
+
+        private async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
+                                                           TimeSpan timeoutValue) where T : BaseFayeMessage
         {
             var json = Converter.Serialize(message);
             var tcs = new TaskCompletionSource<MessageReceivedArgs>();

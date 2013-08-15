@@ -69,21 +69,14 @@ namespace Bsw.FayeDotNet.Client
         private void SocketConnectionReestablished(object sender,
                                                    EventArgs e)
         {
-            Task.Factory.StartNew(() => ReestablishConnection().Wait());
+            Task.Factory.StartNew(ReestablishConnection);
         }
 
-        private async Task ReestablishConnection()
+        private void ReestablishConnection()
         {
-            var handshakeResponse = await Handshake();
-            ClientId = handshakeResponse.ClientId;
             SendConnect(ClientId,
                         _connection);
-            Logger.Debug("Re-subscribing to channels");
-            foreach (var channel in _subscribedChannels.Keys)
-            {
-                await ExecuteSubscribe(channel);
-            }
-            Logger.Info("Connection re-established and channels re-subscribed");
+            Logger.Info("Connection re-established");
             if (ConnectionReestablished != null)
             {
                 ConnectionReestablished(this,
@@ -97,8 +90,8 @@ namespace Bsw.FayeDotNet.Client
                                                       timeoutValue: _advice.Timeout);
         }
 
-        protected override async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
-                                                                      TimeSpan timeoutValue)
+        private async Task<T> ExecuteSynchronousMessage<T>(BaseFayeMessage message,
+                                                           TimeSpan timeoutValue) where T : BaseFayeMessage
         {
             var json = Converter.Serialize(message);
             var tcs = new TaskCompletionSource<MessageReceivedArgs>();
