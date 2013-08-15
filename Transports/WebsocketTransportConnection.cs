@@ -1,7 +1,6 @@
 ﻿#region
 
 using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -33,28 +32,51 @@ namespace Bsw.FayeDotNet.Transports
                                                                          logger: Logger)
         {
             Socket.MessageReceived += WebSocketMessageReceived;
-            Socket.Closed += WebSocketClosed;
+            Socket.Closed += WebSocketClosedWithRetry;
             RetryTimeout = DefaultRetryTimeout;
             ConnectionState = ConnectionState.Connected;
             _outgoingMessageQueue = new Queue<string>();
             _connectionStateMutex = new object();
+            RetryEnabled = true;
         }
 
-        private void WebSocketClosed(object sender,
-                                     EventArgs e)
+        private void WebSocketClosedOnPurpose(object sender,
+                                              EventArgs e)
+        {
+            Logger.Info("Connection close complete");
+            lock (_connectionStateMutex)
+            {
+                ConnectionState = ConnectionState.Disconnected;
+            }
+            if (ConnectionClosed != null)
+            {
+                ConnectionClosed(this,
+                                 new EventArgs());
+            }
+        }
+
+        private void WebSocketClosedWithRetry(object sender,
+                                              EventArgs e)
         {
             lock (_connectionStateMutex)
             {
                 ConnectionState = ConnectionState.Lost;
             }
-            Logger.Info("Lost connection, retrying in {0} milliseconds",
-                        RetryTimeout.TotalMilliseconds);
+            if (RetryEnabled)
+            {
+                Logger.Info("Lost connection, retrying in {0} milliseconds",
+                            RetryTimeout.TotalMilliseconds);
+                Task.Factory.StartNew(() => ReestablishConnection().Wait());
+            }
+            else
+            {
+                Logger.Info("Lost connection and not retrying");
+            }
             if (ConnectionLost != null)
             {
                 ConnectionLost(this,
                                new EventArgs());
             }
-            Task.Factory.StartNew(() => ReestablishConnection().Wait());
         }
 
         private async Task ReestablishConnection()
@@ -130,29 +152,39 @@ namespace Bsw.FayeDotNet.Transports
 
         public async Task Disconnect()
         {
-            if (Socket.State == WebSocketState.Closed)
+            if (ConnectionState == ConnectionState.Disconnected)
             {
-                throw new FayeConnectionException(ALREADY_DISCONNECTED);
+                Logger.Info("Already disconnected!");
+                return;
             }
             Logger.Info("Disconnecting from websocket server");
             // We don't need the retry handler anymore
-            Socket.Closed -= WebSocketClosed;
+            DisableRetryHandler();
             var tcs = new TaskCompletionSource<bool>();
             EventHandler closed = (sender,
                                    args) => tcs.SetResult(true);
             Socket.Closed += closed;
             Socket.Close("Disconnection Requested");
             await tcs.Task;
-            lock (_connectionStateMutex)
-            {
-                ConnectionState = ConnectionState.Disconnected;
-            }
         }
 
         public event MessageReceived MessageReceived;
+        public event ConnectionEvent ConnectionClosed;
         public event ConnectionEvent ConnectionLost;
         public event ConnectionEvent ConnectionReestablished;
         public TimeSpan RetryTimeout { get; set; }
+        public bool RetryEnabled { get; set; }
         public ConnectionState ConnectionState { get; private set; }
+
+        private void DisableRetryHandler()
+        {
+            Socket.Closed -= WebSocketClosedWithRetry;
+            Socket.Closed += WebSocketClosedOnPurpose;
+        }
+
+        public void NotifyOfPendingServerDisconnection()
+        {
+            DisableRetryHandler();
+        }
     }
 }

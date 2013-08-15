@@ -52,17 +52,23 @@ namespace Bsw.FayeDotNet.Client
             _subscribedChannels = new Dictionary<string, List<Action<string>>>();
             _synchronousMessageEvents = new Dictionary<int, TaskCompletionSource<MessageReceivedArgs>>();
             _advice = advice;
+            _connection.ConnectionLost += ConnectionConnectionLost;
             _connection.ConnectionReestablished += SocketConnectionReestablished;
         }
 
-        private void SocketConnectionReestablished(object sender,
-                                                   EventArgs e)
+        private void ConnectionConnectionLost(object sender,
+                                              EventArgs args)
         {
             if (ConnectionLost != null)
             {
                 ConnectionLost(this,
                                new EventArgs());
             }
+        }
+
+        private void SocketConnectionReestablished(object sender,
+                                                   EventArgs e)
+        {
             Task.Factory.StartNew(() => ReestablishConnection().Wait());
         }
 
@@ -156,12 +162,20 @@ namespace Bsw.FayeDotNet.Client
             Logger.Info("Disconnecting from FAYE server");
             var disconnectMessage = new DisconnectRequestMessage(clientId: ClientId,
                                                                  id: MessageCounter++);
+            _connection.NotifyOfPendingServerDisconnection();
+            var closedTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionClosed += (sender,
+                                             args) => closedTcs.SetResult(true);
             var disconResult = await ExecuteSynchronousMessage<DisconnectResponseMessage>(message: disconnectMessage);
             if (!disconResult.Successful)
             {
                 throw new NotImplementedException();
             }
-            await _connection.Disconnect();
+            // wait 60 seconds for the server to close the connection on its own (which it does after getting a disconnect call)
+            await closedTcs.Task.WithTimeout(s => s,
+                                             new TimeSpan(0,
+                                                          0,
+                                                          60));
         }
 
         public async Task Subscribe(string channel,
