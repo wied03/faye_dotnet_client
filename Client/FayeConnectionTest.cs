@@ -264,9 +264,6 @@ namespace Bsw.FayeDotNet.Test.Client
             var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
             objectReceived
                 .ShouldBeEquivalentTo(messageToSend);
-
-            // assert
-            Assert.Fail("write test");
         }
 
         [Test]
