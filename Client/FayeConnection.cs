@@ -52,11 +52,11 @@ namespace Bsw.FayeDotNet.Client
             _subscribedChannels = new Dictionary<string, List<Action<string>>>();
             _synchronousMessageEvents = new Dictionary<int, TaskCompletionSource<MessageReceivedArgs>>();
             _advice = advice;
-            _connection.ConnectionLost += SocketClosed;
+            _connection.ConnectionReestablished += SocketConnectionReestablished;
         }
 
-        private void SocketClosed(object sender,
-                                  EventArgs e)
+        private void SocketConnectionReestablished(object sender,
+                                                   EventArgs e)
         {
             if (ConnectionLost != null)
             {
@@ -111,8 +111,6 @@ namespace Bsw.FayeDotNet.Client
         private void SocketMessageReceived(object sender,
                                            MessageReceivedArgs e)
         {
-            Logger.Debug("Received raw message '{0}'",
-                         e.Message);
             var array = JsonConvert.DeserializeObject<JArray>(e.Message);
             dynamic messageObj = array[0];
             var newAdvice = ParseAdvice(messageObj);

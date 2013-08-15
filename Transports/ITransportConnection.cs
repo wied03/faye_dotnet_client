@@ -17,7 +17,7 @@ namespace Bsw.FayeDotNet.Transports
         public string Message { get; private set; }
     }
 
-    public delegate void ConnectionLost(object sender,
+    public delegate void ConnectionEvent(object sender,
                                         EventArgs args);
 
     public delegate void MessageReceived(object sender,
@@ -34,13 +34,13 @@ namespace Bsw.FayeDotNet.Transports
         Task Disconnect();
 
         event MessageReceived MessageReceived;
-
+        event ConnectionEvent ConnectionLost;
         /// <summary>
         ///     If the transport drops the connection, it will reconnect, but if you need to issue other commands when this
         ///     happens,
         ///     then hook into this event
         /// </summary>
-        event ConnectionLost ConnectionLost;
+        event ConnectionEvent ConnectionReestablished;
 
         TimeSpan RetryTimeout { get; set; }
 

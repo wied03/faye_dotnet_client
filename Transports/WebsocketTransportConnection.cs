@@ -39,6 +39,11 @@ namespace Bsw.FayeDotNet.Transports
         {
             Logger.Info("Lost connection, retrying in {0} milliseconds",
                         RetryTimeout.TotalMilliseconds);
+            if (ConnectionLost != null)
+            {
+                ConnectionLost(this,
+                               new EventArgs());
+            }
             Closed = true;
             Task.Factory.StartNew(() => ReestablishConnection().Wait());
         }
@@ -49,16 +54,18 @@ namespace Bsw.FayeDotNet.Transports
             Logger.Info("Retrying connection");
             await ConnectWebsocket();
             Closed = false;
-            if (ConnectionLost != null)
+            if (ConnectionReestablished != null)
             {
-                ConnectionLost(this,
-                               new EventArgs());
+                ConnectionReestablished(this,
+                                        new EventArgs());
             }
         }
 
         private void WebSocketMessageReceived(object sender,
                                               MessageReceivedEventArgs e)
         {
+            Logger.Debug("Received raw message '{0}'",
+                         e.Message);
             if (MessageReceived != null)
             {
                 MessageReceived(sender,
@@ -92,7 +99,8 @@ namespace Bsw.FayeDotNet.Transports
         }
 
         public event MessageReceived MessageReceived;
-        public event ConnectionLost ConnectionLost;
+        public event ConnectionEvent ConnectionLost;
+        public event ConnectionEvent ConnectionReestablished;
         public TimeSpan RetryTimeout { get; set; }
         public bool Closed { get; private set; }
     }
