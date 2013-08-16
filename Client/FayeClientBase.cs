@@ -73,5 +73,11 @@ namespace Bsw.FayeDotNet.Client
                               interval: interval,
                               timeout: timeout);
         }
+
+        protected static void SetRetry(Advice advice,
+                                       ITransportConnection transportConnection)
+        {
+            transportConnection.RetryEnabled = advice.Reconnect != Reconnect.None;
+        }
     }
 }

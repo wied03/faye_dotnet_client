@@ -21,8 +21,6 @@ namespace Bsw.FayeDotNet.Client
     internal class FayeConnection : FayeClientBase,
                                     IFayeConnection
     {
-        internal const string ALREADY_DISCONNECTED = "Already disconnected";
-
         internal const string WILDCARD_CHANNEL_ERROR_FORMAT =
             "Wildcard channels (you tried to subscribe/unsubscribe from {0}) are not currently supported with this client";
 
@@ -52,12 +50,12 @@ namespace Bsw.FayeDotNet.Client
             _subscribedChannels = new Dictionary<string, List<Action<string>>>();
             _synchronousMessageEvents = new Dictionary<int, TaskCompletionSource<MessageReceivedArgs>>();
             _advice = advice;
-            _connection.ConnectionLost += ConnectionConnectionLost;
+            _connection.ConnectionLost += SocketConnectionLost;
             _connection.ConnectionReestablished += SocketConnectionReestablished;
         }
 
-        private void ConnectionConnectionLost(object sender,
-                                              EventArgs args)
+        private void SocketConnectionLost(object sender,
+                                          EventArgs args)
         {
             if (ConnectionLost != null)
             {
@@ -116,6 +114,8 @@ namespace Bsw.FayeDotNet.Client
             if (newAdvice != null)
             {
                 _advice = newAdvice;
+                SetRetry(_advice,
+                         _connection);
             }
             if (HandleSynchronousReply(messageObj,
                                        e)) return;
@@ -148,9 +148,13 @@ namespace Bsw.FayeDotNet.Client
 
         public async Task Disconnect()
         {
-            if (_connection.ConnectionState == ConnectionState.Disconnected)
+            var connectionState = _connection.ConnectionState;
+            var considerDisconnected = (connectionState == ConnectionState.Disconnected) ||
+                                       (connectionState == ConnectionState.Lost && !_connection.RetryEnabled);
+            if (considerDisconnected)
             {
-                throw new FayeConnectionException(ALREADY_DISCONNECTED);
+                Logger.Info("Already disconnected");
+                return;
             }
             Logger.Info("Disconnecting from FAYE server");
             var disconnectMessage = new DisconnectRequestMessage(clientId: ClientId,

@@ -108,6 +108,8 @@ namespace Bsw.FayeDotNet.Client
             if (newAdvice != null)
             {
                 _advice = newAdvice;
+                SetRetry(_advice,
+                         _transportConnection);
             }
             return Converter.Deserialize<T>(receivedString);
         }
