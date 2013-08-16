@@ -16,3 +16,15 @@ Thread.new {
 }
 
 App = Faye::RackAdapter.new
+
+class RetryAdviceOverride
+	def outgoing(message,callback)		
+		if (message["advice"] and File.exists?("noreconnect.txt"))
+			puts "FayeClientTest: Overriding reconnect advice with none instead of retry"
+			message["advice"]["reconnect"] = "none"
+		end
+		callback.call(message)
+	end
+end
+
+App.add_extension(RetryAdviceOverride.new)

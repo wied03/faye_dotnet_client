@@ -38,6 +38,8 @@ namespace Bsw.FayeDotNet.Test.Client
         private RubyProcess _fayeServerProcess;
         private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
         private Process _socatInterceptor;
+        private static readonly string ReconnectFilePath = Path.GetFullPath(Path.Combine(@"..\..",
+                                                                                         "noreconnect.txt"));
 
         #endregion
 
@@ -81,6 +83,10 @@ namespace Bsw.FayeDotNet.Test.Client
                 {
                     _socatInterceptor.Kill();
                 }
+                if (File.Exists(ReconnectFilePath))
+                {
+                    File.Delete(ReconnectFilePath);
+                }
             }
             base.Teardown();
         }
@@ -88,6 +94,12 @@ namespace Bsw.FayeDotNet.Test.Client
         #endregion
 
         #region Utility Methods
+
+        private void TriggerNoRetriesAllowed()
+        {
+            var file = File.Create(ReconnectFilePath);
+            file.Close();
+        }
 
         private void InstantiateFayeClient()
         {
@@ -128,35 +140,6 @@ namespace Bsw.FayeDotNet.Test.Client
         #endregion
 
         #region Tests
-
-        [Test]
-        public async Task Disconnect()
-        {
-            // arrange
-            _fayeServerProcess.StartThinServer();
-            var socket = new WebSocketClient(uri: TEST_SERVER_URL);
-            SetupWebSocket(socket);
-            InstantiateFayeClient();
-            _connection = await _fayeClient.Connect();
-
-            // act
-            await _connection.Disconnect();
-
-            // assert
-            try
-            {
-                var ex = await _connection.InvokingAsync(c => c.Disconnect())
-                                          .ShouldThrow<FayeConnectionException>();
-                ex.Message
-                  .Should()
-                  .Be(FayeConnection.ALREADY_DISCONNECTED);
-            }
-            finally
-            {
-                // teardown will break if we try and disconnect again
-                _connection = null;
-            }
-        }
 
         [Test]
         public async Task Connect_lost_connection_comes_back_before_publish()
@@ -270,12 +253,52 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Connect_lost_connection_retry_not_allowed()
         {
             // arrange
-            // make sure the server returns advice reconnect none
+            TriggerNoRetriesAllowed();
+            // port 8133
+            const int inputPort = THIN_SERVER_PORT + 1;
+            _fayeServerProcess.StartThinServer();
+            _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                    inputPort: inputPort);
+            const string urlThroughSocat = "ws://localhost:8133/bayeux";
+            var socket = new WebSocketClient(uri: urlThroughSocat);
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            var tcs = new TaskCompletionSource<string>();
+            const string channelName = "/somechannel";
+            var lostTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionLost += (sender,
+                                           args) => lostTcs.SetResult(true);
+            var backTcs = new TaskCompletionSource<bool>();
+            _connection.ConnectionReestablished += (sender,
+                                                    args) => backTcs.SetResult(true);
+            var tryToRestablishTask = backTcs.Task;
 
             // act
+            await _connection.Subscribe(channelName,
+                                        tcs.SetResult);
+            // ReSharper disable once CSharpWarnings::CS4014
+            Task.Factory.StartNew(() =>
+            {
+                _socatInterceptor.Kill();
+                _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                        inputPort: inputPort);
+            });
+            await lostTcs.Task.WithTimeout(t => t,
+                                           20.Seconds());
 
             // assert
-            Assert.Fail("write test");
+            tryToRestablishTask
+                .Status
+                .Should()
+                .Be(TaskStatus.WaitingForActivation,
+                    "should not try and re-establish since we disabled retries");
+            await Task.Delay(10.Seconds());
+            tryToRestablishTask
+                .Status
+                .Should()
+                .Be(TaskStatus.WaitingForActivation,
+                    "Still should not try and re-establish since we disabled retries");
         }
 
         private class TestMsg
