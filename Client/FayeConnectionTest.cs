@@ -395,6 +395,8 @@ namespace Bsw.FayeDotNet.Test.Client
             var tcs2 = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
             var messageToSend = new TestMsg {Stuff = "the message"};
+            var json = JsonConvert.SerializeObject(messageToSend);
+            var task = tcs.Task;
 
             // act
             try
@@ -403,11 +405,10 @@ namespace Bsw.FayeDotNet.Test.Client
                                             tcs.SetResult);
                 await _connection.Subscribe(channelName,
                                             tcs2.SetResult);
-                var json = JsonConvert.SerializeObject(messageToSend);
+                
                 await secondConnection.Publish(channel: channelName,
                                                message: json);
                 // assert
-                var task = tcs.Task;
                 var result = await task.Timeout(5.Seconds());
                 if (result == Result.Timeout)
                 {
