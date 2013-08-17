@@ -112,11 +112,8 @@ namespace Bsw.FayeDotNet.Test.Client
             InstantiateFayeClient();
 
             // act + assert
-            var result = await _fayeClient.InvokingAsync(t => t.Connect())
-                                          .ShouldThrow<SocketException>();
-            result.Message
-                  .Should()
-                  .Be("No such host is known");
+            await _fayeClient.InvokingAsync(t => t.Connect())
+                             .ShouldThrow<SocketException>();
         }
 
         [Test]
