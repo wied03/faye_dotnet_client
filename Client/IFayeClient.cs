@@ -20,5 +20,7 @@ namespace Bsw.FayeDotNet.Client
         /// <returns>A connection that can be used for publishing/subscribing</returns>
         /// <exception cref="HandshakeException">Problem in the handshaking process</exception>
         Task<IFayeConnection> Connect();
+
+        TimeSpan ConnectionOpenTimeout { get; set; }
     }
 }

@@ -57,6 +57,12 @@ namespace Bsw.FayeDotNet.Client
                                       handshakeTimeout: HandshakeTimeout);
         }
 
+        public TimeSpan ConnectionOpenTimeout
+        {
+            get { return _transportClient.ConnectionOpenTimeout; }
+            set { _transportClient.ConnectionOpenTimeout = value; }
+        }
+
         private async Task<HandshakeResponseMessage> Handshake()
         {
             var message = new HandshakeRequestMessage(supportedConnectionTypes: new[] {ONLY_SUPPORTED_CONNECTION_TYPE},

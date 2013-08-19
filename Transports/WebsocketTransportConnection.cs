@@ -26,9 +26,16 @@ namespace Bsw.FayeDotNet.Transports
                                                                             0,
                                                                             5);
 
-        public WebsocketTransportConnection(IWebSocket webSocket) : base(socket: webSocket,
-                                                                         logger: Logger)
+        private readonly Func<TimeSpan> _connectionOpenTimeoutFetch;
+        private readonly Action<TimeSpan> _connectionOpenTimeoutSetter;
+
+        public WebsocketTransportConnection(IWebSocket webSocket,
+                                            Func<TimeSpan> connectionOpenTimeoutFetch,
+                                            Action<TimeSpan> connectionOpenTimeoutSetter) : base(socket: webSocket,
+                                                                                                 logger: Logger)
         {
+            _connectionOpenTimeoutSetter = connectionOpenTimeoutSetter;
+            _connectionOpenTimeoutFetch = connectionOpenTimeoutFetch;
             Socket.MessageReceived += WebSocketMessageReceived;
             Socket.Closed += WebSocketClosedWithRetry;
             RetryTimeout = DefaultRetryTimeout;
@@ -185,6 +192,12 @@ namespace Bsw.FayeDotNet.Transports
         public void NotifyOfPendingServerDisconnection()
         {
             DisableRetryHandler();
+        }
+
+        public override TimeSpan ConnectionOpenTimeout
+        {
+            get { return _connectionOpenTimeoutFetch(); }
+            set { _connectionOpenTimeoutSetter(value); }
         }
     }
 }

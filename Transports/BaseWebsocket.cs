@@ -15,12 +15,12 @@ namespace Bsw.FayeDotNet.Transports
     public abstract class BaseWebsocket
     {
         protected IWebSocket Socket { get; private set; }
-        private static readonly TimeSpan DefaultOpenTimeout = new TimeSpan(0,
-                                                                           0,
-                                                                           10);
-        private readonly Logger _logger;
 
-        protected BaseWebsocket(IWebSocket socket,Logger logger)
+        private readonly Logger _logger;
+        public abstract TimeSpan ConnectionOpenTimeout { get; set; }
+
+        protected BaseWebsocket(IWebSocket socket,
+                                Logger logger)
         {
             _logger = logger;
             Socket = socket;
@@ -43,13 +43,13 @@ namespace Bsw.FayeDotNet.Transports
             Socket.Error += socketOnError;
             Socket.Open();
             var task = tcs.Task;
-            var result = await task.Timeout(DefaultOpenTimeout);
+            var result = await task.Timeout(ConnectionOpenTimeout);
             try
             {
                 if (result == Result.Timeout)
                 {
                     var error = String.Format("Timed out, waited {0} milliseconds to connect via websockets",
-                                              DefaultOpenTimeout.TotalMilliseconds);
+                                              ConnectionOpenTimeout.TotalMilliseconds);
                     throw new FayeConnectionException(error);
                 }
                 if (!task.Result)
