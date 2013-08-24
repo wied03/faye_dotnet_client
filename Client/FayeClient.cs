@@ -102,7 +102,11 @@ namespace Bsw.FayeDotNet.Client
             var result = await task.Timeout(timeoutValue);
             if (result == Result.Timeout)
             {
-                throw new TimeoutException();
+                var timeoutException = new TimeoutException(timeoutValue,
+                                                            json);
+                Logger.ErrorException("Timeout problem, rethrowing",
+                                      timeoutException);
+                throw timeoutException;
             }
             var receivedString = task.Result.Message;
             Logger.Debug("Received message '{0}'",

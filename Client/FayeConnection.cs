@@ -100,7 +100,11 @@ namespace Bsw.FayeDotNet.Client
             var result = await task.Timeout(timeoutValue);
             if (result == Result.Timeout)
             {
-                throw new TimeoutException();
+                var timeoutException = new TimeoutException(timeoutValue,
+                                                            json);
+                Logger.ErrorException("Timeout problem, rethrowing",
+                                      timeoutException);
+                throw timeoutException;
             }
             _synchronousMessageEvents.Remove(message.Id);
             return Converter.Deserialize<T>(task.Result.Message);

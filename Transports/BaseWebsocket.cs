@@ -54,8 +54,10 @@ namespace Bsw.FayeDotNet.Transports
             }
             catch (TimeoutException)
             {
-                var error = String.Format("Timed out, waited {0} milliseconds to connect via websockets",
-                                          ConnectionOpenTimeout.TotalMilliseconds);
+                var error =
+                    String.Format(
+                                  "Timed out, waited {0} milliseconds to connect via websockets.  Check to make sure the hostname and port are correct and that your network is up",
+                                  ConnectionOpenTimeout.TotalMilliseconds);
                 throw new FayeConnectionException(error);
             }
             finally
