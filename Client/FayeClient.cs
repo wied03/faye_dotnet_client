@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.FayeDotNet.Transports;
+using Bsw.FayeDotNet.Utilities;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
 using Newtonsoft.Json;
@@ -32,29 +33,36 @@ namespace Bsw.FayeDotNet.Client
                                                                                         0,
                                                                                         60));
 
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly Logger _logger;
         private ITransportConnection _transportConnection;
+        private readonly string _connectionId;
 
-        public FayeClient(IWebSocket socket) : base(messageCounter: FIRST_MESSAGE_INDEX)
+        public FayeClient(IWebSocket socket,
+                          string connectionId = "standard") : base(messageCounter: FIRST_MESSAGE_INDEX)
         {
-            _transportClient = new WebsocketTransportClient(socket);
+            _connectionId = connectionId;
+            _transportClient = new WebsocketTransportClient(socket,
+                                                            connectionId);
             _advice = DefaultAdvice;
             _transportConnection = null;
+            _logger = LoggerFetcher.GetLogger(connectionId,
+                                              this);
         }
 
         public async Task<IFayeConnection> Connect()
         {
-            Logger.Info("Opening up initial connection to endpoint");
+            _logger.Info("Opening up initial connection to endpoint");
             _transportConnection = await _transportClient.Connect();
             var handshakeResponse = await Handshake();
             SendConnect(handshakeResponse.ClientId,
                         _transportConnection);
-            Logger.Info("Initial connection established");
+            _logger.Info("Initial connection established");
             return new FayeConnection(connection: _transportConnection,
                                       handshakeResponse: handshakeResponse,
                                       messageCounter: MessageCounter,
                                       advice: _advice,
-                                      handshakeTimeout: HandshakeTimeout);
+                                      handshakeTimeout: HandshakeTimeout,
+                                      connectionId: _connectionId);
         }
 
         public TimeSpan ConnectionOpenTimeout
@@ -104,13 +112,13 @@ namespace Bsw.FayeDotNet.Client
             {
                 var timeoutException = new TimeoutException(timeoutValue,
                                                             json);
-                Logger.ErrorException("Timeout problem, rethrowing",
-                                      timeoutException);
+                _logger.ErrorException("Timeout problem, rethrowing",
+                                       timeoutException);
                 throw timeoutException;
             }
             var receivedString = task.Result.Message;
-            Logger.Debug("Received message '{0}'",
-                         receivedString);
+            _logger.Debug("Received message '{0}'",
+                          receivedString);
             _transportConnection.MessageReceived -= received;
             var array = JsonConvert.DeserializeObject<JArray>(receivedString);
             dynamic messageObj = array[0];

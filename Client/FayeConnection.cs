@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Messages;
 using Bsw.FayeDotNet.Transports;
+using Bsw.FayeDotNet.Utilities;
 using MsBw.MsBwUtility.Enum;
 using MsBw.MsBwUtility.Tasks;
 using Newtonsoft.Json;
@@ -30,7 +31,7 @@ namespace Bsw.FayeDotNet.Client
         private readonly ITransportConnection _connection;
         private readonly Dictionary<string, List<Action<string>>> _subscribedChannels;
         private readonly Dictionary<int, TaskCompletionSource<MessageReceivedArgs>> _synchronousMessageEvents;
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly Logger _logger;
         public event ConnectionEvent ConnectionLost;
         public event ConnectionEvent ConnectionReestablished;
         private Advice _advice;
@@ -42,8 +43,9 @@ namespace Bsw.FayeDotNet.Client
                                 HandshakeResponseMessage handshakeResponse,
                                 int messageCounter,
                                 Advice advice,
-                                TimeSpan handshakeTimeout) : base(messageCounter: messageCounter,
-                                                                  handshakeTimeout: handshakeTimeout)
+                                TimeSpan handshakeTimeout,
+                                string connectionId) : base(messageCounter: messageCounter,
+                                                            handshakeTimeout: handshakeTimeout)
         {
             _connection = connection;
             ClientId = handshakeResponse.ClientId;
@@ -53,6 +55,8 @@ namespace Bsw.FayeDotNet.Client
             _advice = advice;
             _connection.ConnectionLost += SocketConnectionLost;
             _connection.ConnectionReestablished += SocketConnectionReestablished;
+            _logger = LoggerFetcher.GetLogger(connectionId,
+                                              this);
         }
 
         private void SocketConnectionLost(object sender,
@@ -75,7 +79,7 @@ namespace Bsw.FayeDotNet.Client
         {
             SendConnect(ClientId,
                         _connection);
-            Logger.Info("Connection re-established");
+            _logger.Info("Connection re-established");
             if (ConnectionReestablished != null)
             {
                 ConnectionReestablished(this,
@@ -102,8 +106,8 @@ namespace Bsw.FayeDotNet.Client
             {
                 var timeoutException = new TimeoutException(timeoutValue,
                                                             json);
-                Logger.ErrorException("Timeout problem, rethrowing",
-                                      timeoutException);
+                _logger.ErrorException("Timeout problem, rethrowing",
+                                       timeoutException);
                 throw timeoutException;
             }
             _synchronousMessageEvents.Remove(message.Id);
@@ -128,16 +132,16 @@ namespace Bsw.FayeDotNet.Client
             var message = Converter.Deserialize<DataMessage>(e.Message);
             var channel = message.Channel;
             var messageData = message.Data.ToString(CultureInfo.InvariantCulture);
-            Logger.Debug("Message data received for channel '{0}' is '{1}",
-                         channel,
-                         messageData);
+            _logger.Debug("Message data received for channel '{0}' is '{1}",
+                          channel,
+                          messageData);
             _subscribedChannels[channel].ForEach(handler => handler(messageData));
         }
 
-        private static bool HandleConnectResponse(dynamic message)
+        private bool HandleConnectResponse(dynamic message)
         {
             if (message.channel != MetaChannels.Connect.StringValue()) return false;
-            Logger.Debug("Received connect response");
+            _logger.Debug("Received connect response");
             return true;
         }
 
@@ -158,10 +162,10 @@ namespace Bsw.FayeDotNet.Client
                                        (connectionState == ConnectionState.Lost && !_connection.RetryEnabled);
             if (considerDisconnected)
             {
-                Logger.Info("Already disconnected");
+                _logger.Info("Already disconnected");
                 return;
             }
-            Logger.Info("Disconnecting from FAYE server");
+            _logger.Info("Disconnecting from FAYE server");
             var disconnectMessage = new DisconnectRequestMessage(clientId: ClientId,
                                                                  id: MessageCounter++);
             _connection.NotifyOfPendingServerDisconnection();
@@ -190,8 +194,8 @@ namespace Bsw.FayeDotNet.Client
             }
             if (_subscribedChannels.ContainsKey(channel))
             {
-                Logger.Debug("Adding additional event for channel '{0}'",
-                             channel);
+                _logger.Debug("Adding additional event for channel '{0}'",
+                              channel);
                 AddLocalChannelHandler(channel,
                                        messageReceivedAction);
                 return;
@@ -199,14 +203,14 @@ namespace Bsw.FayeDotNet.Client
             await ExecuteSubscribe(channel);
             AddLocalChannelHandler(channel,
                                    messageReceivedAction);
-            Logger.Info("Successfully subscribed to channel '{0}'",
-                        channel);
+            _logger.Info("Successfully subscribed to channel '{0}'",
+                         channel);
         }
 
         private async Task ExecuteSubscribe(string channel)
         {
-            Logger.Debug("Subscribing to channel '{0}'",
-                         channel);
+            _logger.Debug("Subscribing to channel '{0}'",
+                          channel);
             var message = new SubscriptionRequestMessage(clientId: ClientId,
                                                          subscriptionChannel: channel,
                                                          id: MessageCounter++);
@@ -242,8 +246,8 @@ namespace Bsw.FayeDotNet.Client
                                           channel);
                 throw new SubscriptionException(error);
             }
-            Logger.Debug("Unsubscribing from channel '{0}'",
-                         channel);
+            _logger.Debug("Unsubscribing from channel '{0}'",
+                          channel);
             var message = new UnsubscribeRequestMessage(clientId: ClientId,
                                                         subscriptionChannel: channel,
                                                         id: MessageCounter++);
@@ -256,9 +260,9 @@ namespace Bsw.FayeDotNet.Client
         public async Task Publish(string channel,
                                   string message)
         {
-            Logger.Debug("Publishing to channel '{0}' message '{1}'",
-                         channel,
-                         message);
+            _logger.Debug("Publishing to channel '{0}' message '{1}'",
+                          channel,
+                          message);
             var msg = new DataMessage(channel: channel,
                                       clientId: ClientId,
                                       data: message,

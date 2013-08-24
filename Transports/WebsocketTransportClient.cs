@@ -5,7 +5,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
-using NLog;
 
 #endregion
 
@@ -14,27 +13,35 @@ namespace Bsw.FayeDotNet.Transports
     public class WebsocketTransportClient : BaseWebsocket,
                                             ITransportClient
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private TimeSpan _connectionOpenTimeout;
 
         public static readonly TimeSpan DefaultConnectionOpenTimeout = new TimeSpan(0,
                                                                                     0,
                                                                                     10);
 
-        public WebsocketTransportClient(IWebSocket webSocket)
+        private readonly string _connectionId;
+
+        /// <summary>
+        /// Build a new transport client
+        /// </summary>
+        /// <param name="webSocket">Websocket to use</param>
+        /// <param name="connectionId">Optional connection ID to include in log files</param>
+        public WebsocketTransportClient(IWebSocket webSocket, string connectionId = "standard")
             : base(socket: webSocket,
-                   logger: Logger)
+                   connectionId: connectionId)
         {
+            _connectionId = connectionId;
             _connectionOpenTimeout = DefaultConnectionOpenTimeout;
         }
 
         public async Task<ITransportConnection> Connect()
         {
             await ConnectWebsocket();
-            return new WebsocketTransportConnection(Socket,
+            return new WebsocketTransportConnection(webSocket: Socket,
                                                     // share the same timeout setting
-                                                    () => _connectionOpenTimeout,
-                                                    t => _connectionOpenTimeout = t);
+                                                    connectionOpenTimeoutFetch: () => _connectionOpenTimeout,
+                                                    connectionOpenTimeoutSetter: t => _connectionOpenTimeout = t,
+                                                    connectionId: _connectionId);
         }
 
         public override TimeSpan ConnectionOpenTimeout

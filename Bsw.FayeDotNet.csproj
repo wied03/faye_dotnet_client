@@ -86,6 +86,7 @@
     <Compile Include="Transports\ITransportConnection.cs" />
     <Compile Include="Transports\WebsocketTransportClient.cs" />
     <Compile Include="Transports\WebsocketTransportConnection.cs" />
+    <Compile Include="Utilities\LoggerFetcher.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">

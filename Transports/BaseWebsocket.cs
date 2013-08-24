@@ -3,6 +3,7 @@
 using System;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Client;
+using Bsw.FayeDotNet.Utilities;
 using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
 using NLog;
@@ -16,20 +17,20 @@ namespace Bsw.FayeDotNet.Transports
     public abstract class BaseWebsocket
     {
         protected IWebSocket Socket { get; private set; }
-
-        private readonly Logger _logger;
+        protected Logger Logger { get; private set; }
         public abstract TimeSpan ConnectionOpenTimeout { get; set; }
 
         protected BaseWebsocket(IWebSocket socket,
-                                Logger logger)
+                                string connectionId)
         {
-            _logger = logger;
+            Logger = LoggerFetcher.GetLogger(connectionId,
+                                             this);
             Socket = socket;
         }
 
         protected async Task ConnectWebsocket()
         {
-            _logger.Debug("Connecting to websocket");
+            Logger.Debug("Connecting to websocket");
             var tcs = new TaskCompletionSource<bool>();
             EventHandler socketOnOpened = (sender,
                                            args) => tcs.SetResult(true);
@@ -65,7 +66,7 @@ namespace Bsw.FayeDotNet.Transports
                 Socket.Error -= socketOnError;
                 Socket.Opened -= socketOnOpened;
             }
-            _logger.Debug("Connected to websocket");
+            Logger.Debug("Connected to websocket");
         }
     }
 }

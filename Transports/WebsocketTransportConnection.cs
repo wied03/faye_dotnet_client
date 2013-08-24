@@ -7,7 +7,6 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Bsw.WebSocket4NetSslExt.Socket;
-using NLog;
 using WebSocket4Net;
 
 #endregion
@@ -17,7 +16,6 @@ namespace Bsw.FayeDotNet.Transports
     public class WebsocketTransportConnection : BaseWebsocket,
                                                 ITransportConnection
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly Queue<string> _outgoingMessageQueue;
         private readonly object _connectionStateMutex;
 
@@ -29,10 +27,11 @@ namespace Bsw.FayeDotNet.Transports
         private readonly Func<TimeSpan> _connectionOpenTimeoutFetch;
         private readonly Action<TimeSpan> _connectionOpenTimeoutSetter;
 
-        public WebsocketTransportConnection(IWebSocket webSocket,
-                                            Func<TimeSpan> connectionOpenTimeoutFetch,
-                                            Action<TimeSpan> connectionOpenTimeoutSetter) : base(socket: webSocket,
-                                                                                                 logger: Logger)
+        internal WebsocketTransportConnection(IWebSocket webSocket,
+                                              Func<TimeSpan> connectionOpenTimeoutFetch,
+                                              Action<TimeSpan> connectionOpenTimeoutSetter,
+                                              string connectionId) : base(socket: webSocket,
+                                                                          connectionId: connectionId)
         {
             _connectionOpenTimeoutSetter = connectionOpenTimeoutSetter;
             _connectionOpenTimeoutFetch = connectionOpenTimeoutFetch;
