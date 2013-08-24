@@ -7,6 +7,7 @@ using Bsw.WebSocket4NetSslExt.Socket;
 using MsBw.MsBwUtility.Tasks;
 using NLog;
 using SuperSocket.ClientEngine;
+using TimeoutException = System.TimeoutException;
 
 #endregion
 
@@ -42,20 +43,20 @@ namespace Bsw.FayeDotNet.Transports
                                                          };
             Socket.Error += socketOnError;
             Socket.Open();
-            var task = tcs.Task;
-            var result = await task.Timeout(ConnectionOpenTimeout);
             try
             {
-                if (result == Result.Timeout)
-                {
-                    var error = String.Format("Timed out, waited {0} milliseconds to connect via websockets",
-                                              ConnectionOpenTimeout.TotalMilliseconds);
-                    throw new FayeConnectionException(error);
-                }
-                if (!task.Result)
+                var result = await tcs.Task.WithTimeout(t => t,
+                                                        ConnectionOpenTimeout);
+                if (!result)
                 {
                     throw exception;
                 }
+            }
+            catch (TimeoutException)
+            {
+                var error = String.Format("Timed out, waited {0} milliseconds to connect via websockets",
+                                          ConnectionOpenTimeout.TotalMilliseconds);
+                throw new FayeConnectionException(error);
             }
             finally
             {
