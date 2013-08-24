@@ -22,11 +22,12 @@ namespace Bsw.FayeDotNet.Transports
         private readonly string _connectionId;
 
         /// <summary>
-        /// Build a new transport client
+        ///     Build a new transport client
         /// </summary>
         /// <param name="webSocket">Websocket to use</param>
         /// <param name="connectionId">Optional connection ID to include in log files</param>
-        public WebsocketTransportClient(IWebSocket webSocket, string connectionId = "standard")
+        public WebsocketTransportClient(IWebSocket webSocket,
+                                        string connectionId = "standard")
             : base(socket: webSocket,
                    connectionId: connectionId)
         {
