@@ -103,10 +103,15 @@ namespace Bsw.FayeDotNet.Test.Client
 
         private void InstantiateFayeClient()
         {
-            _fayeClient = new FayeClient(socket: _websocket,
-                                         connectionId: TestContext.CurrentContext.Test.Name);
+            _fayeClient = GetFayeClient(_websocket);
             // test systems are slow, so give twice the normal amount of time
             _fayeClient.ConnectionOpenTimeout = new TimeSpan(_fayeClient.ConnectionOpenTimeout.Ticks * 2);
+        }
+
+        private static FayeClient GetFayeClient(IWebSocket webSocket)
+        {
+            return new FayeClient(socket: webSocket,
+                                  connectionId: TestContext.CurrentContext.Test.Name);
         }
 
         private void SetupWebSocket(IWebSocket webSocket)
@@ -319,7 +324,7 @@ namespace Bsw.FayeDotNet.Test.Client
             SetupWebSocket(socket);
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
-            var secondClient = new FayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
+            var secondClient = GetFayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
             var secondConnection = await secondClient.Connect();
             var tcs = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
@@ -392,7 +397,7 @@ namespace Bsw.FayeDotNet.Test.Client
             SetupWebSocket(socket);
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
-            var secondClient = new FayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
+            var secondClient = GetFayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
             var secondConnection = await secondClient.Connect();
             var tcs = new TaskCompletionSource<string>();
             var tcs2 = new TaskCompletionSource<string>();
@@ -554,7 +559,7 @@ namespace Bsw.FayeDotNet.Test.Client
             SetupWebSocket(socket);
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
-            var secondClient = new FayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
+            var secondClient = GetFayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
             var secondConnection = await secondClient.Connect();
             const string channelName = "/somechannel";
             var tcs = new TaskCompletionSource<object>();
