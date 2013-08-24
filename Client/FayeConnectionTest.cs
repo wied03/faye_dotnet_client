@@ -103,7 +103,8 @@ namespace Bsw.FayeDotNet.Test.Client
 
         private void InstantiateFayeClient()
         {
-            _fayeClient = new FayeClient(_websocket);
+            _fayeClient = new FayeClient(socket: _websocket,
+                                         connectionId: TestContext.CurrentContext.Test.Name);
             // test systems are slow, so give twice the normal amount of time
             _fayeClient.ConnectionOpenTimeout = new TimeSpan(_fayeClient.ConnectionOpenTimeout.Ticks * 2);
         }

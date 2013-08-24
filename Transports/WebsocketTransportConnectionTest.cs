@@ -95,7 +95,8 @@ namespace Bsw.FayeDotNet.Test.Transports
 
         private void InstantiateTransportClient()
         {
-            _client = new WebsocketTransportClient(_websocket);
+            _client = new WebsocketTransportClient(webSocket: _websocket,
+                                                   connectionId: TestContext.CurrentContext.Test.Name);
             // test systems are slow, so give twice the normal amount of time
             _client.ConnectionOpenTimeout = new TimeSpan(_client.ConnectionOpenTimeout.Ticks*2);
         }

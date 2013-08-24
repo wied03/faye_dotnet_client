@@ -14,13 +14,11 @@ namespace Bsw.FayeDotNet.Test
         [SetUp]
         public virtual void SetUp()
         {
-
         }
 
         [TearDown]
         public virtual void Teardown()
         {
-
-        } 
+        }
     }
 }
