@@ -113,9 +113,23 @@ namespace Bsw.FayeDotNet.Test.Client
             SetupWebSocket(new WebSocketClient(uri: "ws://foobar:8000"));
             InstantiateFayeClient();
 
-            // act + assert
-            await _fayeClient.InvokingAsync(t => t.Connect())
-                             .ShouldThrow<SocketException>();
+            // act
+            try
+            {
+                await _fayeClient.Connect();
+                // assert
+                Assert.Fail("Expected at least 1 exception to be thrown");
+            }
+            catch (SocketException)
+            {
+                Assert.Pass("Got our socket exception");
+            }
+            catch (FayeConnectionException e)
+            {
+                e.Message
+                 .Should().Contain("Timed out",
+                                   "If we don't have a more graceful socket exception, then we should at least get a proper timeout exception");
+            }
         }
 
         [Test]
