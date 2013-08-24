@@ -41,6 +41,8 @@ namespace Bsw.FayeDotNet.Test.Client
         private static readonly string ReconnectFilePath = Path.GetFullPath(Path.Combine(@"..\..",
                                                                                          "noreconnect.txt"));
 
+        private static int _connectionNumber;
+
         #endregion
 
         #region Setup/Teardown
@@ -61,6 +63,7 @@ namespace Bsw.FayeDotNet.Test.Client
             _fayeServerProcess = new RubyProcess(thinPort: THIN_SERVER_PORT,
                                                  workingDirectory: WorkingDirectory);
             _socatInterceptor = null;
+            _connectionNumber = 0;
         }
 
         [TearDown]
@@ -110,8 +113,11 @@ namespace Bsw.FayeDotNet.Test.Client
 
         private static FayeClient GetFayeClient(IWebSocket webSocket)
         {
+            var connectionId = string.Format("Test {0}/Connection # {1}",
+                                             TestContext.CurrentContext.Test.Name,
+                                             _connectionNumber++);
             return new FayeClient(socket: webSocket,
-                                  connectionId: TestContext.CurrentContext.Test.Name);
+                                  connectionId: connectionId);
         }
 
         private void SetupWebSocket(IWebSocket webSocket)
