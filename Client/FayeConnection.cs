@@ -37,12 +37,13 @@ namespace Bsw.FayeDotNet.Client
 
         public string ClientId { get; private set; }
 
-        public FayeConnection(ITransportConnection connection,
-                              HandshakeResponseMessage handshakeResponse,
-                              int messageCounter,
-                              Advice advice,
-                              TimeSpan handshakeTimeout) : base(messageCounter: messageCounter,
-                                                                handshakeTimeout: handshakeTimeout)
+        // internal to only allow FayeClient to instantiate this class
+        internal FayeConnection(ITransportConnection connection,
+                                HandshakeResponseMessage handshakeResponse,
+                                int messageCounter,
+                                Advice advice,
+                                TimeSpan handshakeTimeout) : base(messageCounter: messageCounter,
+                                                                  handshakeTimeout: handshakeTimeout)
         {
             _connection = connection;
             ClientId = handshakeResponse.ClientId;
