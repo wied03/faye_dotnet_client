@@ -35,9 +35,11 @@ namespace Bsw.FayeDotNet.Test.Client
         private IWebSocket _websocket;
         private IFayeClient _fayeClient;
         private IFayeConnection _connection;
+        private IFayeConnection _connection2;
         private RubyProcess _fayeServerProcess;
         private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
         private Process _socatInterceptor;
+
         private static readonly string ReconnectFilePath = Path.GetFullPath(Path.Combine(@"..\..",
                                                                                          "noreconnect.txt"));
 
@@ -60,6 +62,7 @@ namespace Bsw.FayeDotNet.Test.Client
             _fayeClient = null;
             _websocket = null;
             _connection = null;
+            _connection2 = null;
             _fayeServerProcess = new RubyProcess(thinPort: THIN_SERVER_PORT,
                                                  workingDirectory: WorkingDirectory);
             _socatInterceptor = null;
@@ -71,6 +74,10 @@ namespace Bsw.FayeDotNet.Test.Client
         {
             try
             {
+                if (_connection2 != null)
+                {
+                    AsyncContext.Run(() => _connection2.Disconnect());
+                }
                 if (_connection != null)
                 {
                     AsyncContext.Run(() => _connection.Disconnect());
@@ -108,7 +115,7 @@ namespace Bsw.FayeDotNet.Test.Client
         {
             _fayeClient = GetFayeClient(_websocket);
             // test systems are slow, so give twice the normal amount of time
-            _fayeClient.ConnectionOpenTimeout = new TimeSpan(_fayeClient.ConnectionOpenTimeout.Ticks * 2);
+            _fayeClient.ConnectionOpenTimeout = new TimeSpan(_fayeClient.ConnectionOpenTimeout.Ticks*2);
         }
 
         private static FayeClient GetFayeClient(IWebSocket webSocket)
@@ -224,7 +231,7 @@ namespace Bsw.FayeDotNet.Test.Client
             _connection = await _fayeClient.Connect();
             var tcs = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
-            var messageToSend = new TestMsg { Stuff = "the message" };
+            var messageToSend = new TestMsg {Stuff = "the message"};
             var lostTcs = new TaskCompletionSource<bool>();
             _connection.ConnectionLost += (sender,
                                            args) => lostTcs.SetResult(true);
@@ -235,15 +242,15 @@ namespace Bsw.FayeDotNet.Test.Client
                                         tcs.SetResult);
             // ReSharper disable once CSharpWarnings::CS4014
             Task.Factory.StartNew(() =>
-            {
-                Logger.Info("Killing socat");
-                _socatInterceptor.Kill();
-                Logger.Info("Sleeping");
-                Thread.Sleep(5.Seconds());
-                Logger.Info("Restarting socat");
-                _socatInterceptor = StartWritableSocket(hostname: "localhost",
-                                                        inputPort: inputPort);
-            });
+                                  {
+                                      Logger.Info("Killing socat");
+                                      _socatInterceptor.Kill();
+                                      Logger.Info("Sleeping");
+                                      Thread.Sleep(5.Seconds());
+                                      Logger.Info("Restarting socat");
+                                      _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                                              inputPort: inputPort);
+                                  });
             Logger.Info("Waiting for websocket to acknowledge disconnect");
             await lostTcs.Task.WithTimeout(t => t,
                                            20.Seconds());
@@ -293,11 +300,11 @@ namespace Bsw.FayeDotNet.Test.Client
                                         tcs.SetResult);
             // ReSharper disable once CSharpWarnings::CS4014
             Task.Factory.StartNew(() =>
-            {
-                _socatInterceptor.Kill();
-                _socatInterceptor = StartWritableSocket(hostname: "localhost",
-                                                        inputPort: inputPort);
-            });
+                                  {
+                                      _socatInterceptor.Kill();
+                                      _socatInterceptor = StartWritableSocket(hostname: "localhost",
+                                                                              inputPort: inputPort);
+                                  });
             await lostTcs.Task.WithTimeout(t => t,
                                            20.Seconds());
 
@@ -331,35 +338,29 @@ namespace Bsw.FayeDotNet.Test.Client
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
             var secondClient = GetFayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
-            var secondConnection = await secondClient.Connect();
+            _connection2 = await secondClient.Connect();
             var tcs = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
             var messageToSend = new TestMsg {Stuff = "the message"};
 
             // act
-            try
+
+            await _connection.Subscribe(channelName,
+                                        tcs.SetResult);
+            var json = JsonConvert.SerializeObject(messageToSend);
+            await _connection2.Publish(channel: channelName,
+                                       message: json);
+            // assert
+            var task = tcs.Task;
+            var result = await task.Timeout(5.Seconds());
+            if (result == Result.Timeout)
             {
-                await _connection.Subscribe(channelName,
-                                            tcs.SetResult);
-                var json = JsonConvert.SerializeObject(messageToSend);
-                await secondConnection.Publish(channel: channelName,
-                                               message: json);
-                // assert
-                var task = tcs.Task;
-                var result = await task.Timeout(5.Seconds());
-                if (result == Result.Timeout)
-                {
-                    Assert.Fail("Timed out waiting for pub/sub to work");
-                }
-                var jsonReceived = task.Result;
-                var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
-                objectReceived
-                    .ShouldBeEquivalentTo(messageToSend);
+                Assert.Fail("Timed out waiting for pub/sub to work");
             }
-            finally
-            {
-                secondConnection.Disconnect().Wait();
-            }
+            var jsonReceived = task.Result;
+            var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+            objectReceived
+                .ShouldBeEquivalentTo(messageToSend);
         }
 
         [Test]
@@ -404,7 +405,7 @@ namespace Bsw.FayeDotNet.Test.Client
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
             var secondClient = GetFayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
-            var secondConnection = await secondClient.Connect();
+            _connection2 = await secondClient.Connect();
             var tcs = new TaskCompletionSource<string>();
             var tcs2 = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
@@ -413,40 +414,34 @@ namespace Bsw.FayeDotNet.Test.Client
             var task = tcs.Task;
 
             // act
-            try
+
+            await _connection.Subscribe(channelName,
+                                        tcs.SetResult);
+            await _connection.Subscribe(channelName,
+                                        tcs2.SetResult);
+
+            await _connection2.Publish(channel: channelName,
+                                       message: json);
+            // assert
+            var result = await task.Timeout(5.Seconds());
+            if (result == Result.Timeout)
             {
-                await _connection.Subscribe(channelName,
-                                            tcs.SetResult);
-                await _connection.Subscribe(channelName,
-                                            tcs2.SetResult);
-                
-                await secondConnection.Publish(channel: channelName,
-                                               message: json);
-                // assert
-                var result = await task.Timeout(5.Seconds());
-                if (result == Result.Timeout)
-                {
-                    Assert.Fail("Timed out waiting for pub/sub to work");
-                }
-                var jsonReceived = task.Result;
-                var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
-                objectReceived
-                    .ShouldBeEquivalentTo(messageToSend);
-                task = tcs2.Task;
-                result = await task.Timeout(5.Seconds());
-                if (result == Result.Timeout)
-                {
-                    Assert.Fail("Timed out waiting for pub/sub to work");
-                }
-                jsonReceived = task.Result;
-                objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
-                objectReceived
-                    .ShouldBeEquivalentTo(messageToSend);
+                Assert.Fail("Timed out waiting for pub/sub to work");
             }
-            finally
+            var jsonReceived = task.Result;
+            var objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+            objectReceived
+                .ShouldBeEquivalentTo(messageToSend);
+            task = tcs2.Task;
+            result = await task.Timeout(5.Seconds());
+            if (result == Result.Timeout)
             {
-                secondConnection.Disconnect().Wait();
+                Assert.Fail("Timed out waiting for pub/sub to work");
             }
+            jsonReceived = task.Result;
+            objectReceived = JsonConvert.DeserializeObject<TestMsg>(jsonReceived);
+            objectReceived
+                .ShouldBeEquivalentTo(messageToSend);
         }
 
         [Test]
@@ -566,34 +561,28 @@ namespace Bsw.FayeDotNet.Test.Client
             InstantiateFayeClient();
             _connection = await _fayeClient.Connect();
             var secondClient = GetFayeClient(new WebSocketClient(uri: TEST_SERVER_URL));
-            var secondConnection = await secondClient.Connect();
+            _connection2 = await secondClient.Connect();
             const string channelName = "/somechannel";
             var tcs = new TaskCompletionSource<object>();
             var messageToSendObj = new TestMsg {Stuff = "the message"};
             var messageToSend = JsonConvert.SerializeObject(messageToSendObj);
 
-            try
-            {
-                await _connection.Subscribe(channelName,
-                                            tcs.SetResult); // should never hit this
 
-                // act
-                await _connection.Unsubscribe(channelName);
+            await _connection.Subscribe(channelName,
+                                        tcs.SetResult); // should never hit this
 
-                // assert
-                await secondConnection.Publish(channelName,
-                                               messageToSend);
-                await Task.Delay(100.Milliseconds());
-                tcs.Task
-                   .Status
-                   .Should()
-                   .Be(TaskStatus.WaitingForActivation,
-                       "We should never fire our event since we unsubscribe before the 1st message");
-            }
-            finally
-            {
-                secondConnection.Disconnect().Wait();
-            }
+            // act
+            await _connection.Unsubscribe(channelName);
+
+            // assert
+            await _connection2.Publish(channelName,
+                                       messageToSend);
+            await Task.Delay(100.Milliseconds());
+            tcs.Task
+               .Status
+               .Should()
+               .Be(TaskStatus.WaitingForActivation,
+                   "We should never fire our event since we unsubscribe before the 1st message");
         }
 
         #endregion
