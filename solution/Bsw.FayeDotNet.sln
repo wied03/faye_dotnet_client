@@ -12,8 +12,44 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{68AAAC
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bsw.FayeDotNet", "src\Bsw.FayeDotNet\Bsw.FayeDotNet.csproj", "{76B47907-4129-41F6-9B96-7B5A32710705}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bsw.WebSocket4NetSslExt", "src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj", "{CC00141A-B9C4-47B3-89E2-FCD842875325}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bsw.FayeDotNet.Test", "test\Bsw.FayeDotNet.Test\Bsw.FayeDotNet.Test.csproj", "{568816BC-8E96-4278-A89B-70DF538931D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bsw.WebSocket4NetSslExt.Test", "test\Bsw.WebSocket4NetSslExt.Test\Bsw.WebSocket4NetSslExt.Test.csproj", "{B3139654-B7E3-4830-B70E-14E044172563}"
+EndProject
 Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{76B47907-4129-41F6-9B96-7B5A32710705}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76B47907-4129-41F6-9B96-7B5A32710705}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76B47907-4129-41F6-9B96-7B5A32710705}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76B47907-4129-41F6-9B96-7B5A32710705}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC00141A-B9C4-47B3-89E2-FCD842875325}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC00141A-B9C4-47B3-89E2-FCD842875325}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC00141A-B9C4-47B3-89E2-FCD842875325}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC00141A-B9C4-47B3-89E2-FCD842875325}.Release|Any CPU.Build.0 = Release|Any CPU
+		{568816BC-8E96-4278-A89B-70DF538931D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{568816BC-8E96-4278-A89B-70DF538931D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{568816BC-8E96-4278-A89B-70DF538931D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{568816BC-8E96-4278-A89B-70DF538931D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3139654-B7E3-4830-B70E-14E044172563}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3139654-B7E3-4830-B70E-14E044172563}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3139654-B7E3-4830-B70E-14E044172563}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3139654-B7E3-4830-B70E-14E044172563}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{76B47907-4129-41F6-9B96-7B5A32710705} = {227589FD-6756-4D38-BE9B-93E51F87671B}
+		{CC00141A-B9C4-47B3-89E2-FCD842875325} = {227589FD-6756-4D38-BE9B-93E51F87671B}
+		{568816BC-8E96-4278-A89B-70DF538931D0} = {C5AD49B9-C542-4B72-9A9B-FEAE90CFF0D2}
+		{B3139654-B7E3-4830-B70E-14E044172563} = {C5AD49B9-C542-4B72-9A9B-FEAE90CFF0D2}
 	EndGlobalSection
 EndGlobal
