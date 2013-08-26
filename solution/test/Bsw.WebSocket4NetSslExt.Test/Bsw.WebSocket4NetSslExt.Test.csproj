@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Bsw.RubyExecution">
+      <HintPath>..\..\..\nuget_pkg_lnk\Bsw.RubyExecution.1.0.21.0\lib\net45\Bsw.RubyExecution.dll</HintPath>
+    </Reference>
     <Reference Include="FluentAssertions">
       <HintPath>..\..\..\nuget_pkg_lnk\FluentAssertions.2.0.1\lib\net45\FluentAssertions.dll</HintPath>
     </Reference>
@@ -64,10 +67,6 @@
     <ProjectReference Include="..\..\src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">
       <Project>{cc00141a-b9c4-47b3-89e2-fcd842875325}</Project>
       <Name>Bsw.WebSocket4NetSslExt</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Bsw.RubyExecution\Bsw.RubyExecution.csproj">
-      <Project>{ef2da0b4-bc3d-4625-9abe-e3ac66d7cd57}</Project>
-      <Name>Bsw.RubyExecution</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Bsw.RubyExecution">
+      <HintPath>..\..\..\nuget_pkg_lnk\Bsw.RubyExecution.1.0.21.0\lib\net45\Bsw.RubyExecution.dll</HintPath>
+    </Reference>
     <Reference Include="FluentAssertions">
       <HintPath>..\..\..\nuget_pkg_lnk\FluentAssertions.2.0.1\lib\net45\FluentAssertions.dll</HintPath>
     </Reference>
@@ -101,10 +104,6 @@
       <Project>{CC00141A-B9C4-47B3-89E2-FCD842875325}</Project>
       <Name>Bsw.WebSocket4NetSslExt</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Bsw.RubyExecution\Bsw.RubyExecution.csproj">
-      <Project>{ef2da0b4-bc3d-4625-9abe-e3ac66d7cd57}</Project>
-      <Name>Bsw.RubyExecution</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -117,7 +116,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />  
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
