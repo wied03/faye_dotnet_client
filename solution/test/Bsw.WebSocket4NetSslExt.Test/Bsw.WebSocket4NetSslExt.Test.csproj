@@ -66,9 +66,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">
+    <ProjectReference Include="..\..\src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4Net.Wrapper.csproj">
       <Project>{cc00141a-b9c4-47b3-89e2-fcd842875325}</Project>
-      <Name>Bsw.WebSocket4NetSslExt</Name>
+      <Name>Bsw.WebSocket4Net.Wrapper</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
