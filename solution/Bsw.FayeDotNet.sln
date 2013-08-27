@@ -18,7 +18,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bsw.WebSocket4Net.Wrapper",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bsw.FayeDotNet.Test", "test\Bsw.FayeDotNet.Test\Bsw.FayeDotNet.Test.csproj", "{568816BC-8E96-4278-A89B-70DF538931D0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bsw.WebSocket4Net.Wrapper.Test", "test\Bsw.WebSocket4NetSslExt.Test\Bsw.WebSocket4Net.Wrapper.Test.csproj", "{B3139654-B7E3-4830-B70E-14E044172563}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bsw.WebSocket4Net.Wrapper.Test", "test\Bsw.WebSocket4Net.Wrapper.Test\Bsw.WebSocket4Net.Wrapper.Test.csproj", "{B3139654-B7E3-4830-B70E-14E044172563}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
