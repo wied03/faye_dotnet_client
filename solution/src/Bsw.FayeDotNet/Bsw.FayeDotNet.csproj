@@ -89,7 +89,7 @@
     <Compile Include="Utilities\LoggerFetcher.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4Net.Wrapper.csproj">
+    <ProjectReference Include="..\Bsw.WebSocket4Net.Wrapper\Bsw.WebSocket4Net.Wrapper.csproj">
       <Project>{cc00141a-b9c4-47b3-89e2-fcd842875325}</Project>
       <Name>Bsw.WebSocket4Net.Wrapper</Name>
     </ProjectReference>

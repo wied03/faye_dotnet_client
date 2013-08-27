@@ -17,7 +17,7 @@ using WebSocket4Net;
 
 #endregion
 
-namespace Bsw.WebSocket4NetSslExt.Test.Socket
+namespace Bsw.WebSocket4Net.Wrapper.Test.Socket
 {
     [TestFixture]
     public class WebSocketCustomSslTrustTest : BaseTest

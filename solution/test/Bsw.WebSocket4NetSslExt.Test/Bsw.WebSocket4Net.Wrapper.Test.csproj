@@ -7,8 +7,8 @@
     <ProjectGuid>{B3139654-B7E3-4830-B70E-14E044172563}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Bsw.WebSocket4NetSslExt.Test</RootNamespace>
-    <AssemblyName>Bsw.WebSocket4NetSslExt.Test</AssemblyName>
+    <RootNamespace>Bsw.WebSocket4Net.Wrapper.Test</RootNamespace>
+    <AssemblyName>Bsw.WebSocket4Net.Wrapper.Test</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
