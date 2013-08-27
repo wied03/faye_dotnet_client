@@ -29,7 +29,7 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
 
         private TaskCompletionSource<string> _messageReceivedTask;
         private List<X509Certificate> _trustedCerts;
-        private RubyProcess _websocketProcess;
+        private ThinServerProcess _websocketProcess;
         private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
 
         [TestFixtureSetUp]
@@ -45,8 +45,8 @@ namespace Bsw.WebSocket4NetSslExt.Test.Socket
             _trustedCerts = new List<X509Certificate>();
             _socket = new WebSocketCustomSslTrust(uri: URI,
                                                   trustedCertChain: _trustedCerts);
-            _websocketProcess = new RubyProcess(thinPort: 8132,
-                                                workingDirectory: WorkingDirectory);
+            _websocketProcess = new ThinServerProcess(thinPort: 8132,
+                                                      workingDirectory: WorkingDirectory);
             _messageReceivedTask = new TaskCompletionSource<string>();
         }
 

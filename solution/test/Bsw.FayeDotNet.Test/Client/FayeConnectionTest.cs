@@ -37,7 +37,7 @@ namespace Bsw.FayeDotNet.Test.Client
         private IFayeClient _fayeClient;
         private IFayeConnection _connection;
         private IFayeConnection _connection2;
-        private RubyProcess _fayeServerProcess;
+        private ThinServerProcess _fayeServerProcess;
         private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
         private Process _socatInterceptor;
 
@@ -64,8 +64,8 @@ namespace Bsw.FayeDotNet.Test.Client
             _websocket = null;
             _connection = null;
             _connection2 = null;
-            _fayeServerProcess = new RubyProcess(thinPort: THIN_SERVER_PORT,
-                                                 workingDirectory: WorkingDirectory);
+            _fayeServerProcess = new ThinServerProcess(thinPort: THIN_SERVER_PORT,
+                                                       workingDirectory: WorkingDirectory);
             _socatInterceptor = null;
             _connectionNumber = 0;
         }

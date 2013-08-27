@@ -34,7 +34,7 @@ namespace Bsw.FayeDotNet.Test.Client
         private IWebSocket _websocket;
         private IFayeClient _fayeClient;
         private IFayeConnection _connection;
-        private RubyProcess _fayeServerProcess;
+        private ThinServerProcess _fayeServerProcess;
         private static readonly string WorkingDirectory = Path.GetFullPath(@"..\..");
 
         #endregion
@@ -54,8 +54,8 @@ namespace Bsw.FayeDotNet.Test.Client
             _fayeClient = null;
             _websocket = null;
             _connection = null;
-            _fayeServerProcess = new RubyProcess(thinPort: 8132,
-                                                workingDirectory: WorkingDirectory);
+            _fayeServerProcess = new ThinServerProcess(thinPort: 8132,
+                                                       workingDirectory: WorkingDirectory);
         }
 
         [TearDown]
