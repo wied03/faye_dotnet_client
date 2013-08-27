@@ -51,6 +51,7 @@
     <Compile Include="Socket\WebSocketCustomSslTrust.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Bsw.WebSocket4Net.Wrapper.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

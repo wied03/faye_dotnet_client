@@ -62,14 +62,14 @@ with (".nuget/nuget.exe") do |ngetpath|
 				end					
 			end
 			
-			with ('src/Testing/Bsw.NHibernate.Testing') do |projPath|
+			with ('src/Bsw.WebSocket4Net.Wrapper') do |projPath|
 				with ("#{projPath}/Properties/AssemblyInfo.cs") do |asminfo|
 					assemblyinfo :versionwebsocketwrapper do |asm|
 						puts "Putting version number #{ver} on assembly"
 						asm.version = ver
 						asm.file_version = ver
 						asm.company_name = companyName
-						asm.product_name = "BSW NHibernate Testing"
+						asm.product_name = "BSW WebSocket4Net Wrapper"
 						asm.output_file = asminfo
 						asm.input_file = asminfo
 					end			
@@ -77,7 +77,7 @@ with (".nuget/nuget.exe") do |ngetpath|
 				
 				nugetpack :packwebsocketwrapper do |n|
 						n.command = ngetpath
-						n.nuspec = "#{projPath}/Bsw.NHibernate.Testing.csproj"
+						n.nuspec = "#{projPath}/Bsw.WebSocket4Net.Wrapper.csproj"
 						n.base_folder = projPath
 						n.output = projPath
 				end					
