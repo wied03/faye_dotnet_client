@@ -1,5 +1,5 @@
-// Copyright 2013 BSW Technology Consulting, released under the BSD license - see LICENSING.txt at the top of this repository for details
-﻿#region
+﻿// Copyright 2013 BSW Technology Consulting, released under the BSD license - see LICENSING.txt at the top of this repository for details
+ #region
 
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using WebSocket4Net;
 
 #endregion
 
-namespace Bsw.WebSocket4NetSslExt.Socket
+namespace Bsw.WebSocket4Net.Wrapper.Socket
 {
     public class WebSocketClient : WebSocket,
                                    IWebSocket

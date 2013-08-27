@@ -103,9 +103,9 @@
       <Project>{76b47907-4129-41f6-9b96-7b5a32710705}</Project>
       <Name>Bsw.FayeDotNet</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">
+    <ProjectReference Include="..\..\src\Bsw.WebSocket4Net.Wrapper\Bsw.WebSocket4Net.Wrapper.csproj">
       <Project>{CC00141A-B9C4-47B3-89E2-FCD842875325}</Project>
-      <Name>Bsw.WebSocket4NetSslExt</Name>
+      <Name>Bsw.WebSocket4Net.Wrapper</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

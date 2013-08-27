@@ -1,5 +1,5 @@
-// Copyright 2013 BSW Technology Consulting, released under the BSD license - see LICENSING.txt at the top of this repository for details
-﻿#region
+﻿// Copyright 2013 BSW Technology Consulting, released under the BSD license - see LICENSING.txt at the top of this repository for details
+ #region
 
 using System;
 using System.Collections.Generic;
@@ -10,14 +10,14 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Bsw.RubyExecution;
-using Bsw.WebSocket4NetSslExt.Socket;
+using Bsw.WebSocket4Net.Wrapper.Socket;
 using FluentAssertions;
 using NUnit.Framework;
 using WebSocket4Net;
 
 #endregion
 
-namespace Bsw.WebSocket4NetSslExt.Test.Socket
+namespace Bsw.WebSocket4Net.Wrapper.Test.Socket
 {
     [TestFixture]
     public class WebSocketCustomSslTrustTest : BaseTest
