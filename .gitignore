@@ -32,3 +32,4 @@ nuget.config
 !**/.nuget/NuGet.Config
 .DS_Store
 nuget_pkg_lnk
+*.nupkg
