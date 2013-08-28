@@ -20,9 +20,6 @@ task :ci => [:clean, :build, :test]
 task :clean => [:cleandnet, :cleanpackages]
 task :test => [:codetest]
 task :package => [:clean, :pack]
-
-task :version => [:versionwebsocketwrapper,
-				  :versionfayeclient]
 				  
 task :pack => [:packwebsocketwrapper,
 			   :packfayeclient]
