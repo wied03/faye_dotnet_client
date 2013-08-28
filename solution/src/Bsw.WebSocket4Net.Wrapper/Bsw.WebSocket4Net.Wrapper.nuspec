@@ -1,0 +1,13 @@
+﻿<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Bsw.WebSocket4Net.Wrapper</id>
+    <version>$version$</version>
+    <title>BSW WebSocket4Net Wrapper</title>
+    <authors>BSW Technology Consulting</authors>
+    <owners>BSW Technology Consulting</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Wraps the WebSocket4Net package with an interface and also add the ability to only trust certain SSL certificates when connecting to a server.</description>
+    <copyright>Copyright 2013</copyright>
+  </metadata>
+</package>

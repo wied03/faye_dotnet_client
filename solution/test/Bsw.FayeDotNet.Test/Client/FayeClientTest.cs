@@ -1,5 +1,5 @@
-// Copyright 2013 BSW Technology Consulting, released under the BSD license - see LICENSING.txt at the top of this repository for details
-﻿#region
+﻿// Copyright 2013 BSW Technology Consulting, released under the BSD license - see LICENSING.txt at the top of this repository for details
+ #region
 
 using System;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using Bsw.FayeDotNet.Client;
 using Bsw.FayeDotNet.Messages;
 using Bsw.RubyExecution;
-using Bsw.WebSocket4NetSslExt.Socket;
+using Bsw.WebSocket4Net.Wrapper.Socket;
 using FluentAssertions;
 using MsBw.MsBwUtility.Enum;
 using MsbwTest;

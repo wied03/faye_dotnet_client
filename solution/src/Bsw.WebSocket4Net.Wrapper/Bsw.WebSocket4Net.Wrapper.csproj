@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B3139654-B7E3-4830-B70E-14E044172563}</ProjectGuid>
+    <ProjectGuid>{CC00141A-B9C4-47B3-89E2-FCD842875325}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Bsw.WebSocket4NetSslExt.Test</RootNamespace>
-    <AssemblyName>Bsw.WebSocket4NetSslExt.Test</AssemblyName>
+    <RootNamespace>Bsw.WebSocket4Net.Wrapper</RootNamespace>
+    <AssemblyName>Bsw.WebSocket4Net.Wrapper</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
@@ -31,20 +31,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Bsw.RubyExecution, Version=1.0.26.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\nuget_pkg_lnk\Bsw.RubyExecution.1.0.26.0\lib\net45\Bsw.RubyExecution.dll</HintPath>
-    </Reference>
-    <Reference Include="FluentAssertions, Version=2.1.0.0, Culture=neutral, PublicKeyToken=33f2691a05b67b6a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\nuget_pkg_lnk\FluentAssertions.2.1.0.0\lib\net45\FluentAssertions.dll</HintPath>
-    </Reference>
-    <Reference Include="nunit.framework">
-      <HintPath>..\..\..\nuget_pkg_lnk\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Management" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -55,21 +43,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Socket\WebSocketCustomSslTrustTest.cs" />
+    <Compile Include="Socket\ConnectionException.cs" />
+    <Compile Include="Socket\IWebSocket.cs" />
+    <Compile Include="Socket\SSLException.cs" />
+    <Compile Include="Socket\WebSocketClient.cs" />
+    <Compile Include="Socket\WebSocketCustomSslTrust.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.rb" />
-    <None Include="config.ru" />
-    <None Include="Gemfile" />
+    <None Include="Bsw.WebSocket4Net.Wrapper.nuspec" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Bsw.WebSocket4NetSslExt\Bsw.WebSocket4NetSslExt.csproj">
-      <Project>{cc00141a-b9c4-47b3-89e2-fcd842875325}</Project>
-      <Name>Bsw.WebSocket4NetSslExt</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
