@@ -19,7 +19,7 @@ end
 task :ci => [:clean, :build, :test]
 task :clean => [:cleandnet, :cleanpackages]
 task :test => [:codetest]
-task :package => [:clean, :version, :build, :pack]
+task :package => [:clean, :pack]
 
 task :version => [:versionwebsocketwrapper,
 				  :versionfayeclient]
@@ -37,52 +37,70 @@ task :cleanpackages do
 	rm_rf FileList['**/*.nupkg']
 end
 
-with (".nuget/nuget.exe") do |ngetpath|
-	with (ENV['version_number']) do |ver|
-		with("BSW Technology Consulting") do |companyName|
+# We might have already done this in this build cycle, but we update the source with versions
+# so need to do force a build
+task :forcebuildforpackages do
+	Rake::Task["build"].execute
+end
 
-			with ('src/Bsw.FayeDotNet') do |projPath|
-				with ("#{projPath}/Properties/AssemblyInfo.cs") do |asminfo|
-					assemblyinfo :versionfayeclient do |asm|
-						puts "Putting version number #{ver} on assembly"
-						asm.version = ver
-						asm.file_version = ver
-						asm.company_name = companyName
-						asm.product_name = "BSW FAYE .NET Client"
-						asm.output_file = asminfo
-						asm.input_file = asminfo
-					end			
+with (".nuget/nuget.exe") do |ngetpath|
+	with (ENV['nuget_apikey']) do |apikey|
+		with (ENV['version_number']) do |ver|
+			with("BSW Technology Consulting") do |companyName|
+				with ('src/Bsw.FayeDotNet') do |projPath|
+					with ("#{projPath}/Properties/AssemblyInfo.cs") do |asminfo|
+						assemblyinfo :versionfayeclient do |asm|
+							puts "Putting version number #{ver} on assembly"
+							asm.version = ver
+							asm.file_version = ver
+							asm.company_name = companyName
+							asm.product_name = "BSW FAYE .NET Client"
+							asm.output_file = asminfo
+							asm.input_file = asminfo
+						end			
+					end
+					
+					nugetpack :packfayeclient => [:versionfayeclient,:forcebuildforpackages] do |n|
+							n.command = ngetpath
+							n.nuspec = "#{projPath}/Bsw.FayeDotNet.csproj"
+							n.base_folder = projPath
+							n.output = projPath
+					end
+
+					nugetpush :pushfayeclient => :packfayeclient do |n|
+						n.command = ngetpath
+						n.package = "#{projPath}/Bsw.FayeDotNet.#{ver}.nupkg"
+						n.apikey = apikey						
+					end
 				end
 				
-				nugetpack :packfayeclient do |n|
+				with ('src/Bsw.WebSocket4Net.Wrapper') do |projPath|
+					with ("#{projPath}/Properties/AssemblyInfo.cs") do |asminfo|
+						assemblyinfo :versionwebsocketwrapper do |asm|
+							puts "Putting version number #{ver} on assembly"
+							asm.version = ver
+							asm.file_version = ver
+							asm.company_name = companyName
+							asm.product_name = "BSW WebSocket4Net Wrapper"
+							asm.output_file = asminfo
+							asm.input_file = asminfo
+						end			
+					end
+					
+					nugetpack :packwebsocketwrapper => [:versionwebsocketwrapper,:forcebuildforpackages] do |n|
+							n.command = ngetpath
+							n.nuspec = "#{projPath}/Bsw.WebSocket4Net.Wrapper.csproj"
+							n.base_folder = projPath
+							n.output = projPath
+					end					
+					
+					nugetpush :pushwebsocketwrapper => :packwebsocketwrapper do |n|
 						n.command = ngetpath
-						n.nuspec = "#{projPath}/Bsw.FayeDotNet.csproj"
-						n.base_folder = projPath
-						n.output = projPath
-				end					
+						n.package = "#{projPath}/Bsw.WebSocket4Net.Wrapper.#{ver}.nupkg"
+						n.apikey = apikey						
+					end
+				end				
 			end
-			
-			with ('src/Bsw.WebSocket4Net.Wrapper') do |projPath|
-				with ("#{projPath}/Properties/AssemblyInfo.cs") do |asminfo|
-					assemblyinfo :versionwebsocketwrapper do |asm|
-						puts "Putting version number #{ver} on assembly"
-						asm.version = ver
-						asm.file_version = ver
-						asm.company_name = companyName
-						asm.product_name = "BSW WebSocket4Net Wrapper"
-						asm.output_file = asminfo
-						asm.input_file = asminfo
-					end			
-				end
-				
-				nugetpack :packwebsocketwrapper do |n|
-						n.command = ngetpath
-						n.nuspec = "#{projPath}/Bsw.WebSocket4Net.Wrapper.csproj"
-						n.base_folder = projPath
-						n.output = projPath
-				end					
-			end	
-			
 		end
 	end
 end
