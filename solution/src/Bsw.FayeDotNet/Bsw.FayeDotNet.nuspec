@@ -11,6 +11,9 @@
 	
 	Source code is located @ https://github.com/wied03/faye_dotnet_client
 	</description>
+    <dependencies>
+      <dependency id="Bsw.WebSocket4Net.Wrapper" version="$version$" />
+    </dependencies>
     <copyright>Copyright 2013</copyright>
   </metadata>
 </package>
