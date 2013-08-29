@@ -7,10 +7,8 @@
     <authors>BSW Technology Consulting</authors>
     <owners>BSW Technology Consulting</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>A .NET client for the Bayeux 1.0 protocol (tested with the FAYE server for Ruby).  Currently only supports the WebSocket4Net web socket implementation but could be enhanced later for long polling, etc.
-	
-	Source code is located @ https://github.com/wied03/faye_dotnet_client
-	</description>
+    <description>A .NET client for the Bayeux 1.0 protocol (tested with the FAYE server for Ruby).  Currently only supports the WebSocket4Net web socket implementation but could be enhanced later for long polling, etc.</description>
+	<projectUrl>https://github.com/wied03/faye_dotnet_client</projectUrl>
     <dependencies>
       <dependency id="Bsw.WebSocket4Net.Wrapper" version="$version$" />
     </dependencies>
