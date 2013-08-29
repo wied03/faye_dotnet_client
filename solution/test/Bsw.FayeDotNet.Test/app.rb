@@ -27,7 +27,7 @@ class CustomSubscriptionOverride
 	end
 	def incoming(message,callback)
 		if (message["channel"] == Faye::Channel::SUBSCRIBE and message["subscription"] == "/servertest/customsubscription")
-			App.get_client.publish("/servertest/customsubscriptioninforesponse", 'text' => 'foobar')
+			App.get_client.publish("/servertest/customsubscriptioninforesponse", 'text' => message)
 		end
 
 		callback.call(message)
