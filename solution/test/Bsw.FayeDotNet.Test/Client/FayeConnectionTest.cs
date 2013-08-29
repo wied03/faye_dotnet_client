@@ -376,15 +376,15 @@ namespace Bsw.FayeDotNet.Test.Client
             var tcs = new TaskCompletionSource<string>();
             const string channelName = "/somechannel";
             var messageToSend = new TestMsg {Stuff = "the message"};
+            var json = JsonConvert.SerializeObject(messageToSend);
+            var task = tcs.Task;
 
             // act
             await _connection.Subscribe(channelName,
                                         tcs.SetResult);
-            var json = JsonConvert.SerializeObject(messageToSend);
             await _connection.Publish(channel: channelName,
                                       message: json);
             // assert
-            var task = tcs.Task;
             var result = await task.Timeout(5.Seconds());
             if (result == Result.Timeout)
             {

@@ -1,5 +1,8 @@
-﻿// Copyright 2013 BSW Technology Consulting, released under the BSD license - see LICENSING.txt at the top of this repository for details
- #region
+﻿#region
+
+// Copyright 2013 BSW Technology Consulting, released under the BSD license - see LICENSING.txt at the top of this repository for details
+
+#region
 
 using System;
 using System.Collections.Generic;
@@ -19,6 +22,8 @@ using MsbwTest;
 using Newtonsoft.Json;
 using Nito.AsyncEx;
 using NUnit.Framework;
+
+#endregion
 
 #endregion
 
@@ -89,9 +94,11 @@ namespace Bsw.FayeDotNet.Test.Client
             _websocket = webSocket;
         }
 
-        private static string GetHandshakeResponse(bool successful = true, string error = null,List<string> connTypes = null)
+        private static string GetHandshakeResponse(bool successful = true,
+                                                   string error = null,
+                                                   List<string> connTypes = null)
         {
-            var supportedConnectionTypes = connTypes ?? new List<string> {FayeClient.ONLY_SUPPORTED_CONNECTION_TYPE};
+            var supportedConnectionTypes = connTypes ?? new List<string> {FayeClientBase.ONLY_SUPPORTED_CONNECTION_TYPE};
             var response =
                 new
                 {
@@ -153,7 +160,7 @@ namespace Bsw.FayeDotNet.Test.Client
                                                                                         error: "something failed");
                                                         }
                              };
-            
+
             SetupWebSocket(mockSocket);
             InstantiateFayeClient();
 
@@ -178,7 +185,7 @@ namespace Bsw.FayeDotNet.Test.Client
                                                                    new EventArgs());
                                                 }
                              };
-            
+
             SetupWebSocket(mockSocket);
             InstantiateFayeClient();
             _fayeClient.HandshakeTimeout = 150.Milliseconds();
@@ -197,20 +204,28 @@ namespace Bsw.FayeDotNet.Test.Client
         public async Task Connect_no_common_connection_types()
         {
             // arrange
+            var expectedError = "Handshaking with server failed. Reason: " +
+                                string.Format(FayeClientBase.CONNECTION_TYPE_ERROR_FORMAT,
+                                              "'someTypeWeDontSupport'");
             var mockSocket = new MockSocket
-            {
-                OpenedAction = handler =>
-                {
-                    Thread.Sleep(100);
-                    handler.Invoke(this,
-                                   new EventArgs());
-                },
-                MessageReceiveAction = gotThisMsg =>
-                {
-                    Thread.Sleep(100);
-                    return GetHandshakeResponse(connTypes: new List<string> {"someTypeWeDontSupport"});
-                }
-            };
+                             {
+                                 OpenedAction = handler =>
+                                                {
+                                                    Thread.Sleep(100);
+                                                    handler.Invoke(this,
+                                                                   new EventArgs());
+                                                },
+                                 MessageReceiveAction = gotThisMsg =>
+                                                        {
+                                                            Thread.Sleep(100);
+                                                            return
+                                                                GetHandshakeResponse(connTypes:
+                                                                                         new List<string>
+                                                                                         {
+                                                                                             "someTypeWeDontSupport"
+                                                                                         });
+                                                        }
+                             };
 
             SetupWebSocket(mockSocket);
             InstantiateFayeClient();
@@ -218,9 +233,6 @@ namespace Bsw.FayeDotNet.Test.Client
             // act + assert
             var exception = await _fayeClient.InvokingAsync(c => c.Connect())
                                              .ShouldThrow<HandshakeException>();
-            var expectedError = "Handshaking with server failed. Reason: " +
-                                string.Format(FayeClient.CONNECTION_TYPE_ERROR_FORMAT,
-                                              "'someTypeWeDontSupport'");
             exception
                 .Message
                 .Should()
