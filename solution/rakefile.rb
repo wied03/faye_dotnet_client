@@ -19,13 +19,19 @@ end
 task :ci => [:clean, :build, :test]
 task :clean => [:cleandnet, :cleanpackages]
 task :test => [:codetest]
-task :package => [:clean, :pack]
+# Version here because our re-build below with forcebuildforpackages will not execute for each version
+task :package => [:clean, :version, :pack]
 
 task :version => [:versionwebsocketwrapper,
 				  :versionfayeclient]
 				  
 task :pack => [:packwebsocketwrapper,
 			   :packfayeclient]
+			   
+# Our re-build below with forcebuildforpackages will not execute for each package
+task :push => [:package,
+			   :pushwebsocketwrapper,
+			   :pushfayeclient]			   
 
 with ('test') do |t|	
 	BradyW::Nunit.new :codetest => :build do |test|
