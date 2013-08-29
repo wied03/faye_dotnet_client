@@ -10,7 +10,7 @@ using System.Linq.Expressions;
 
 namespace Bsw.FayeDotNet.Messages
 {
-    internal class HandshakeResponseMessage : HandshakeRequestMessage
+    public class HandshakeResponseMessage : HandshakeRequestMessage
     {
         public bool Successful { get; set; }
         public string Error { get; set; }

@@ -9,6 +9,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Bsw.FayeDotNet.Client;
+using Bsw.FayeDotNet.Messages;
 using Bsw.RubyExecution;
 using Bsw.WebSocket4Net.Wrapper.Socket;
 using FluentAssertions;
@@ -585,6 +586,66 @@ namespace Bsw.FayeDotNet.Test.Client
                .Be(TaskStatus.WaitingForActivation,
                    "We should never fire our event since we unsubscribe before the 1st message");
         }
+
+        public class CustomizedSubRequest : SubscriptionRequestMessage
+        {
+            public string SomeCustomField { get; set; }
+
+            public CustomizedSubRequest(string clientId,
+                                        string subscriptionChannel,
+                                        int id,
+                                        string someCustomField)
+                : base(clientId,
+                       subscriptionChannel,
+                       id)
+            {
+                SomeCustomField = someCustomField;
+            }
+        }
+
+        [Test]
+        public async Task PresubscriptionHandler()
+        {
+            // arrange
+            _fayeServerProcess.StartThinServer();
+            var socket = new WebSocketClient(uri: TEST_SERVER_URL);
+            SetupWebSocket(socket);
+            InstantiateFayeClient();
+            _connection = await _fayeClient.Connect();
+            _connection.PresubscriptionHandler += ConnectionOnPresubscriptionHandler;
+            var messageReceivedTcs = new TaskCompletionSource<string>();
+            var messageReceivedTask = messageReceivedTcs.Task;
+            // we've configured the FAYE server to echo back a message when /servertest/customsubscription is subscribed to
+            const string testServerChannel = "/servertest/customsubscriptioninforesponse";
+            await _connection.Subscribe(channel: testServerChannel,
+                                        messageReceivedAction: messageReceivedTcs.SetResult);
+
+            // act
+            await _connection.Subscribe(channel: "/servertest/customsubscription",
+                                        messageReceivedAction: Console.WriteLine);
+
+            // assert
+            var resultMsgStr = await messageReceivedTask.WithTimeout(m => m,
+                                                                     10.Seconds());
+            dynamic asJsonObj = JsonConvert.DeserializeObject(resultMsgStr);
+            string someCustomField = asJsonObj.someCustomField;
+            someCustomField
+                .Should()
+                .Be("got this from hs 123test");
+        }
+
+        private static SubscriptionRequestMessage ConnectionOnPresubscriptionHandler(
+            SubscriptionRequestMessage defaultRequest,
+            HandshakeResponseMessage initialHandshakeResponse)
+        {
+            return new CustomizedSubRequest(clientId: defaultRequest.ClientId,
+                                            subscriptionChannel: defaultRequest.Subscription,
+                                            id: defaultRequest.Id,
+                                            someCustomField:
+                                                "got this from hs " +
+                                                (string)initialHandshakeResponse.Ext["customhsinfo"]);
+        }
+
 
         #endregion
     }

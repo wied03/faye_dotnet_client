@@ -2,6 +2,7 @@
 ﻿#region
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using MsBw.MsBwUtility.Enum;
@@ -33,5 +34,6 @@ namespace Bsw.FayeDotNet.Messages
 
         public string Channel { get; set; }
         public int Id { get; set; }
+        public IDictionary<string, object> Ext { get; set; } 
     }
 }

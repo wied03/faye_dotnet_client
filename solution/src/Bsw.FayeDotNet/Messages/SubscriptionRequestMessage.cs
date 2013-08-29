@@ -9,7 +9,7 @@ using System.Linq.Expressions;
 
 namespace Bsw.FayeDotNet.Messages
 {
-    internal class SubscriptionRequestMessage : BaseFayeMessage
+    public class SubscriptionRequestMessage : BaseFayeMessage
     {
         public string ClientId { get; set; }
         public string Subscription { get; set; }

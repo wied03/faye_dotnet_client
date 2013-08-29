@@ -35,6 +35,7 @@ namespace Bsw.FayeDotNet.Client
         private readonly Logger _logger;
         public event ConnectionEvent ConnectionLost;
         public event ConnectionEvent ConnectionReestablished;
+        public event CustomizeSubscriptionRequest PresubscriptionHandler;
         private Advice _advice;
 
         public string ClientId { get; private set; }

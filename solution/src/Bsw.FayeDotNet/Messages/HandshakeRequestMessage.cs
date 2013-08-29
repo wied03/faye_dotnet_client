@@ -10,7 +10,7 @@ using System.Linq.Expressions;
 
 namespace Bsw.FayeDotNet.Messages
 {
-    internal class HandshakeRequestMessage : BaseFayeMessage
+    public class HandshakeRequestMessage : BaseFayeMessage
     {
         internal const string BAYEUX_VERSION_1 = "1.0";
         public string Version { get; set; }
