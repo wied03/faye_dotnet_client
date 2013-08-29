@@ -25,6 +25,7 @@ namespace Bsw.FayeDotNet.Messages
         {
             Channel = channel;
             Id = id;
+            Ext = new Dictionary<object, object>();
         }
 
         // for JSON serializer
@@ -34,6 +35,6 @@ namespace Bsw.FayeDotNet.Messages
 
         public string Channel { get; set; }
         public int Id { get; set; }
-        public IDictionary<string, object> Ext { get; set; } 
+        public IDictionary<object, object> Ext { get; set; } 
     }
 }

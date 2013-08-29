@@ -20,14 +20,13 @@ App = Faye::RackAdapter.new
 class CustomSubscriptionOverride
 	def outgoing(message,callback)		
 		if (message["channel"] == Faye::Channel::HANDSHAKE)
-			ext = message["ext"] || {}
-			ext["customhsinfo"] = "123test"
+			message["ext"] = {"customhsinfo" => "123test"}
 		end
 		callback.call(message)
 	end
 	def incoming(message,callback)
 		if (message["channel"] == Faye::Channel::SUBSCRIBE and message["subscription"] == "/servertest/customsubscription")
-			App.get_client.publish("/servertest/customsubscriptioninforesponse", 'text' => message)
+			App.get_client.publish("/servertest/customsubscriptioninforesponse", message)
 		end
 
 		callback.call(message)

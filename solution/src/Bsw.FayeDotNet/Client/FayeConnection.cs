@@ -37,6 +37,7 @@ namespace Bsw.FayeDotNet.Client
         public event ConnectionEvent ConnectionReestablished;
         public event CustomizeSubscriptionRequest PresubscriptionHandler;
         private Advice _advice;
+        private readonly HandshakeResponseMessage _handshakeResponse;
 
         public string ClientId { get; private set; }
 
@@ -49,6 +50,7 @@ namespace Bsw.FayeDotNet.Client
                                 string connectionId) : base(messageCounter: messageCounter,
                                                             handshakeTimeout: handshakeTimeout)
         {
+            _handshakeResponse = handshakeResponse;
             _connection = connection;
             ClientId = handshakeResponse.ClientId;
             _connection.MessageReceived += SocketMessageReceived;
@@ -216,6 +218,11 @@ namespace Bsw.FayeDotNet.Client
             var message = new SubscriptionRequestMessage(clientId: ClientId,
                                                          subscriptionChannel: channel,
                                                          id: MessageCounter++);
+            if (PresubscriptionHandler != null)
+            {
+                message = PresubscriptionHandler(message,
+                                                 _handshakeResponse);
+            }
 
             var result = await ExecuteSynchronousMessage<SubscriptionResponseMessage>(message: message);
             if (!result.Successful) throw new SubscriptionException(result.Error);

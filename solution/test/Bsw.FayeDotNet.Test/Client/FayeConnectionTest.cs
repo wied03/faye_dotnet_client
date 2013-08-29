@@ -589,8 +589,6 @@ namespace Bsw.FayeDotNet.Test.Client
 
         public class CustomizedSubRequest : SubscriptionRequestMessage
         {
-            public string SomeCustomField { get; set; }
-
             public CustomizedSubRequest(string clientId,
                                         string subscriptionChannel,
                                         int id,
@@ -599,7 +597,7 @@ namespace Bsw.FayeDotNet.Test.Client
                        subscriptionChannel,
                        id)
             {
-                SomeCustomField = someCustomField;
+                Ext["someCustomField"] = someCustomField;
             }
         }
 
@@ -628,7 +626,7 @@ namespace Bsw.FayeDotNet.Test.Client
             var resultMsgStr = await messageReceivedTask.WithTimeout(m => m,
                                                                      10.Seconds());
             dynamic asJsonObj = JsonConvert.DeserializeObject(resultMsgStr);
-            string someCustomField = asJsonObj.someCustomField;
+            string someCustomField = asJsonObj.ext.someCustomField;
             someCustomField
                 .Should()
                 .Be("got this from hs 123test");
