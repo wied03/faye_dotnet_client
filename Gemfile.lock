@@ -4,7 +4,7 @@ GEM
     albacore (0.3.5)
       rubyzip
     rake (10.1.0)
-    rakedotnet (1.1.51)
+    rakedotnet (1.1.56)
       windows-pr
     rubyzip (0.9.9)
     win32-api (1.5.0-x86-mingw32)
@@ -20,5 +20,5 @@ PLATFORMS
 DEPENDENCIES
   albacore
   rake
-  rakedotnet (= 1.1.51)
+  rakedotnet (= 1.1.56)
   rubyzip (= 0.9.9)
