@@ -5,30 +5,29 @@ require "config"
 require "nunit"
 require "albacore"
 
+VERSION = ENV['version_number']
+
 with('Bsw.FayeDotNet.sln') do |sln|
 	BradyW::MSBuild.new :cleandnet do |clean|
 		clean.targets = "clean"
 		clean.solution = sln
 	end
 
-	BradyW::MSBuild.new :build do |build|
+	BradyW::MSBuild.new :build => [:versionfayeclient,:versionfayeclient] do |build|
 		build.solution = sln
 	end
 end
 
-task :ci => [:clean, :build, :test]
+task :ci => [:clean, :build, :test, :package]
 task :clean => [:cleandnet, :cleanpackages]
 task :test => [:codetest]
-# Version here because our re-build below with forcebuildforpackages will not execute for each version
-task :package => [:clean, :version, :pack]
 
 task :version => [:versionwebsocketwrapper,
 				  :versionfayeclient]
 				  
-task :pack => [:packwebsocketwrapper,
-			   :packfayeclient]
-			   
-# Our re-build below with forcebuildforpackages will not execute for each package
+task :package => [:packwebsocketwrapper,
+			   :packfayeclient]			   
+
 task :push => [:package,
 			   :pushwebsocketwrapper,
 			   :pushfayeclient]			   
@@ -66,7 +65,7 @@ with (".nuget/nuget.exe") do |ngetpath|
 						end			
 					end
 					
-					nugetpack :packfayeclient => [:versionfayeclient,:forcebuildforpackages] do |n|
+					nugetpack :packfayeclient => :build do |n|
 							n.command = ngetpath
 							n.nuspec = "#{projPath}/Bsw.FayeDotNet.csproj"
 							n.base_folder = projPath
@@ -93,7 +92,7 @@ with (".nuget/nuget.exe") do |ngetpath|
 						end			
 					end
 					
-					nugetpack :packwebsocketwrapper => [:versionwebsocketwrapper,:forcebuildforpackages] do |n|
+					nugetpack :packwebsocketwrapper => :build do |n|
 							n.command = ngetpath
 							n.nuspec = "#{projPath}/Bsw.WebSocket4Net.Wrapper.csproj"
 							n.base_folder = projPath

@@ -31,9 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Bsw.RubyExecution, Version=1.0.26.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Bsw.RubyExecution, Version=1.0.28.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\nuget_pkg_lnk\Bsw.RubyExecution.1.0.26.0\lib\net45\Bsw.RubyExecution.dll</HintPath>
+      <HintPath>..\..\..\nuget_pkg_lnk\Bsw.RubyExecution.1.0.28.0\lib\net45\Bsw.RubyExecution.dll</HintPath>
     </Reference>
     <Reference Include="FluentAssertions, Version=2.1.0.0, Culture=neutral, PublicKeyToken=33f2691a05b67b6a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
